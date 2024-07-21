@@ -1,0 +1,23 @@
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+incremental = false
+debug = false
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"
+
+[unstable]
+codegen-backend = true
+
+[target.aarch64-apple-darwin]
+rustflags = ["-Zshare-generics=y"]
