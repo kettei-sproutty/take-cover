@@ -1,6 +1,8 @@
 use bevy::prelude::*;
-use spawn::{player_movement, spawn_player};
+use movement::player_movement;
+use spawn::spawn_player;
 
+mod movement;
 mod spawn;
 
 pub struct PlayerPlugin;
