@@ -55,6 +55,9 @@ fn main() -> AppExit {
 
   app.add_plugins(bevy_plugins);
 
+  // Handling state machines
+  app.add_plugins(seldom_state::StateMachinePlugin);
+
   // Add the AppState to the App
   app.add_plugins(crate::app_state::AppStatePlugin);
 
