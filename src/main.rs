@@ -8,7 +8,7 @@ mod prelude {
 use assets::AssetsLoadingPlugin;
 use bevy_ecs_ldtk::prelude::*;
 use iyes_progress::prelude::*;
-use screens::{loading::LoadscreenPlugin, main_menu::MainMenuPlugin};
+use screens::{game::GamePlugin, loading::LoadscreenPlugin, main_menu::MainMenuPlugin};
 
 use crate::prelude::*;
 
@@ -47,6 +47,7 @@ fn main() -> AppExit {
   let bevy_plugins = bevy_plugins.set(ImagePlugin::default_nearest());
 
   #[cfg(target_arch = "wasm32")]
+  // Disable assets meta check on wasm to throw 4xx errors
   let bevy_plugins = bevy_plugins.set(AssetPlugin {
     meta_check: bevy::asset::AssetMetaCheck::Never,
     ..Default::default()
@@ -71,6 +72,9 @@ fn main() -> AppExit {
     },
     MainMenuPlugin {
       state: AppState::MainMenu,
+    },
+    GamePlugin {
+      state: AppState::InGame,
     },
     AssetsLoadingPlugin,
   ));
