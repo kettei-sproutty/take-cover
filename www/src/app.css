@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-size: 100%;
+  @apply h-dvh bg-primary-900 text-primary-100 text-pretty overscroll-none;
+  @apply font-sans selection:bg-primary-500 selection:text-primary-100;
+}
+
+/* https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#remove-canvasparentresizeplugin */
+canvas {
+  @apply !w-full !h-full
+}
+
+@layer base {
+  @font-face {
+    font-family: "Exo 2";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src:
+      local("Exo 2"),
+      url(/assets/fonts/Exo2.ttf) format("truetype");
+  }
+
+  @font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src:
+      local("JetBrains Mono"),
+      url(/assets/fonts/Exo2.ttf) format("truetype");
+  }
+
+  :root {
+    --primary-100: 180,2.2%,91.2%;
+    --primary-200: 210,2%,80.8%;
+    --primary-300: 220,1.5%,61.4%;
+    --primary-400: 210,2.8%,42%;
+    --primary-500: 205.7,6.1%,22.5%;
+    --primary-600: 214.3,11.9%,11.6%;
+    --primary-700: 210,13.6%,8.6%;
+    --primary-800: 200,10.3%,5.7%;
+    --primary-900: 210,14.3%,2.7%;
+  }
+}
