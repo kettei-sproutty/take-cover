@@ -8,3 +8,7 @@
 
 ## Assets
 - [Kenney](https://www.kenney.nl) - See LICENSE in [/assets/textures/1-bit/License.txt]
+
+## How to play
+
+TODO

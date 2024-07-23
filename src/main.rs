@@ -30,15 +30,27 @@ fn main() -> AppExit {
   // Change the default window settings
   let bevy_plugins = bevy_plugins.set(WindowPlugin {
     primary_window: Some(Window {
+      #[cfg(not(target_arch = "wasm32"))]
       title: "Take Cover".into(),
       present_mode: bevy::window::PresentMode::Fifo,
       resizable: true,
+      prevent_default_event_handling: true,
+      #[cfg(target_arch = "wasm32")]
+      fit_canvas_to_parent: true,
+      #[cfg(target_arch = "wasm32")]
+      canvas: Some("#take-cover".into()),
       ..Default::default()
     }),
     ..Default::default()
   });
 
   let bevy_plugins = bevy_plugins.set(ImagePlugin::default_nearest());
+
+  #[cfg(target_arch = "wasm32")]
+  let bevy_plugins = bevy_plugins.set(AssetPlugin {
+    meta_check: bevy::asset::AssetMetaCheck::Never,
+    ..Default::default()
+  });
 
   app.add_plugins(bevy_plugins);
 

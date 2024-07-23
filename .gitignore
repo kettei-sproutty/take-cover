@@ -1,5 +1,17 @@
 # Cargo
 /target
 
+# Node
+www/node_modules
+www/.output
+www/.svelte-kit
+www/build
+www/static/assets
+www/src/assets/take-cover
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
 # Misc
 .DS_Store
