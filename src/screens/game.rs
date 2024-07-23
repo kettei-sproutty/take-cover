@@ -18,10 +18,13 @@ fn setup_game(mut commands: Commands, ui: Res<UiAssets>) {
   camera.projection.scale = 0.5;
   camera.transform.translation.x += 1280.0 / 4.0;
   camera.transform.translation.y += 720.0 / 4.0;
-  commands.spawn(camera);
+  commands.spawn((StateDespawnMarker, camera));
 
-  commands.spawn(LdtkWorldBundle {
-    ldtk_handle: ui.planet.clone(),
-    ..Default::default()
-  });
+  commands.spawn((
+    StateDespawnMarker,
+    LdtkWorldBundle {
+      ldtk_handle: ui.planet.clone(),
+      ..Default::default()
+    },
+  ));
 }
