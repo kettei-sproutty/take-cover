@@ -23,5 +23,6 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [features]
+default = ["dev_native"]
 dev = ["bevy/dynamic_linking", "bevy/bevy_dev_tools"]
 dev_native = ["dev", "bevy/file_watcher", "bevy/embedded_watcher"]
