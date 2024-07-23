@@ -16,6 +16,9 @@ inherits = "release"
 opt-level = "s"
 strip = "debuginfo"
 
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg=web_sys_unstable_apis"]
+
 [unstable]
 codegen-backend = true
 
