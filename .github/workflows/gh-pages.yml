@@ -15,7 +15,8 @@ jobs:
         with:
           version: 8
       - run: cargo install wasm-bindgen-cli
-      - run: cargo build --release --target wasm32-unknown-unknown --no-default-features
+      # --cfg=web_sys_unstable_apis has no really impact, as "bevy_egui" is not used in the wasm build
+      - run: cargo build --release --target wasm32-unknown-unknown --no-default-features --cfg=web_sys_unstable_apis
       - run: wasm-bindgen --out-dir www/src/assets/take-cover --target web ./target/wasm32-unknown-unknown/release/take-cover.wasm
       - run: cp -r assets www/static
       - run: cd www && pnpm install --no-frozen-lockfile && pnpm build
