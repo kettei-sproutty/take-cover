@@ -8,6 +8,7 @@ pub struct AssetsLoadingPlugin;
 /// Resources for the UI assets
 pub struct UiAssets {
   pub font_sans: Handle<Font>,
+  #[allow(unused)]
   pub font_mono: Handle<Font>,
   #[allow(unused)]
   pub atlas: Handle<Image>,
@@ -16,8 +17,9 @@ pub struct UiAssets {
 
 #[derive(Resource)]
 /// Audio Resources for main menu
-pub struct MainMenuAudio {
+pub struct MainMenuAssets {
   pub music: Handle<AudioSource>,
+  pub volume_waves_icon: Handle<Image>,
 }
 
 impl Plugin for AssetsLoadingPlugin {
@@ -69,10 +71,15 @@ pub fn load_main_menu_audio_assets(
 ) {
   // Loading all audio assets
   let music = asset_server.load("sounds/main_menu.wav");
+  let volume_waves_icon = asset_server.load("icons/volume-waves.png");
 
   // Connect the assets to the loading tracker by `iyes_progress`
   loading.add(&music);
+  loading.add(&volume_waves_icon);
 
   // Insert the audio resources into the game
-  commands.insert_resource(MainMenuAudio { music });
+  commands.insert_resource(MainMenuAssets {
+    music,
+    volume_waves_icon,
+  });
 }
