@@ -22,12 +22,6 @@ impl<S: States> Plugin for GamePlugin<S> {
 }
 
 fn setup_game(mut commands: Commands, ui: Res<UiAssets>) {
-  let mut camera = Camera2dBundle::default();
-  camera.projection.scale = 0.5;
-  camera.transform.translation.x += 1280.0 / 4.0;
-  camera.transform.translation.y += 720.0 / 4.0;
-  commands.spawn((StateDespawnMarker, camera));
-
   commands.spawn((
     StateDespawnMarker,
     LdtkWorldBundle {

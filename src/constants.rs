@@ -14,4 +14,4 @@ pub mod colors {
 }
 
 pub const SPRITE_SIZE: f32 = 16.;
-pub const PLAYER_SPEED: f32 = SPRITE_SIZE;
+pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 1.5;

@@ -43,30 +43,41 @@ pub fn init_player(mut commands: Commands) {
       false
     };
 
-  commands.spawn((
-    StateDespawnMarker,
-    StateMachine::default()
-      .trans::<Idle, _>(has_moved, Move)
-      .trans::<Move, _>(has_moved.not(), Idle)
-      .set_trans_logging(true),
-    Collider::cuboid(8., 8.),
-    RigidBody::Dynamic,
-    Velocity::zero(),
-    SpriteBundle {
-      sprite: Sprite {
-        color: Color::srgb(0., 0., 0.),
-        custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
-        ..default()
+  commands
+    .spawn((
+      StateDespawnMarker,
+      StateMachine::default()
+        .trans::<Idle, _>(has_moved, Move)
+        .trans::<Move, _>(has_moved.not(), Idle)
+        .set_trans_logging(true),
+      Collider::cuboid(8., 8.),
+      RigidBody::KinematicVelocityBased,
+      Velocity::zero(),
+      SpriteBundle {
+        sprite: Sprite {
+          color: Color::srgb(0., 0., 0.),
+          custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
+          ..default()
+        },
+        transform: Transform::from_xyz(15., 15., 2.),
+        ..Default::default()
       },
-      transform: Transform::from_xyz(15., 15., 2.),
-      ..Default::default()
-    },
-    Player {
-      speed: PLAYER_SPEED,
-    },
-    GravityScale(0.),
-    Idle,
-  ));
+      Player {
+        speed: PLAYER_SPEED,
+      },
+      GravityScale(0.),
+      Idle,
+    ))
+    .with_children(|parent| {
+      parent.spawn(Camera2dBundle {
+        transform: Transform::from_xyz(0., 0., 10.),
+        projection: OrthographicProjection {
+          scale: 0.4,
+          ..Default::default()
+        },
+        ..Default::default()
+      });
+    });
 }
 
 fn move_player(
