@@ -113,25 +113,6 @@ fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<
     })
     .id();
 
-  let settings = commands
-    .spawn((
-      ButtonBundle::default(),
-      StateOnPress {
-        action: AppState::InGame,
-      },
-    ))
-    .with_children(|parent| {
-      parent.spawn(TextBundle::from_section(
-        "Settings",
-        TextStyle {
-          font: ui.font_sans.clone(),
-          color: colors::PRIMARY_100,
-          font_size: 32.,
-        },
-      ));
-    })
-    .id();
-
   let volume_icon = commands
     .spawn((
       ButtonBundle {
@@ -153,7 +134,7 @@ fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<
 
   commands
     .entity(container)
-    .push_children(&[play_button, settings, volume_icon]);
+    .push_children(&[play_button, volume_icon]);
 }
 
 fn play_main_menu_audio(mut commands: Commands, audio: Res<MainMenuAssets>) {
