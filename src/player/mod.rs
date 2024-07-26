@@ -44,6 +44,7 @@ pub fn init_player(mut commands: Commands) {
     };
 
   commands.spawn((
+    StateDespawnMarker,
     StateMachine::default()
       .trans::<Idle, _>(has_moved, Move)
       .trans::<Move, _>(has_moved.not(), Idle)
