@@ -1,6 +1,6 @@
 use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
 
-use crate::{assets::UiAssets, prelude::*};
+use crate::{assets::UiAssets, enemy::EnemyPlugin, prelude::*};
 
 pub struct GamePlugin<S: States> {
   pub state: S,
@@ -10,6 +10,8 @@ impl<S: States> Plugin for GamePlugin<S> {
   fn build(&self, app: &mut App) {
     app.add_systems(OnEnter(self.state.clone()), setup_game);
     app.insert_resource(LevelSelection::index(0));
+
+    app.add_plugins((PlayerPlugin, EnemyPlugin));
   }
 }
 
