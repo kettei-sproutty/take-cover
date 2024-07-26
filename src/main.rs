@@ -1,16 +1,9 @@
-mod prelude {
-  pub use crate::app_state::{AppState, StateDespawnMarker};
-  pub use crate::constants::*;
-  pub use crate::player::*;
-  pub use crate::utils::*;
-  pub use bevy::prelude::*;
-}
-
 use assets::AssetsLoadingPlugin;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
+use game::GamePlugin;
 use iyes_progress::prelude::*;
-use screens::{game::GamePlugin, loading::LoadscreenPlugin, main_menu::MainMenuPlugin};
+use screens::{loading::LoadscreenPlugin, main_menu::MainMenuPlugin};
 
 use crate::prelude::*;
 
@@ -19,8 +12,8 @@ mod assets;
 mod constants;
 #[cfg(feature = "dev")]
 mod dev_tools;
-mod enemy;
-mod player;
+mod game;
+mod prelude;
 mod screens;
 mod utils;
 

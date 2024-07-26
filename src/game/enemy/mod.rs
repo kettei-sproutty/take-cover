@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use rand::prelude::*;
 use seldom_state::prelude::*;
 
 use crate::prelude::*;
@@ -40,7 +41,12 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
   // init enemy state
   fn build(&self, app: &mut App) {
-    app.add_systems(OnEnter(AppState::InGame), spawn_enemy.after(init_player));
+    app.add_systems(
+      Update,
+      spawn_enemy
+        .after(init_player)
+        .run_if(in_state(AppState::InGame)),
+    );
     app.add_systems(
       Update,
       follow.run_if(in_state(AppState::InGame)).after(spawn_enemy),
@@ -74,14 +80,20 @@ fn follow(
 
 fn spawn_enemy(
   mut commands: Commands,
-  query: Query<Entity, With<Player>>,
+  enemy_query: Query<&Enemy>,
+  player_entity_query: Query<Entity, With<Player>>,
+  player_transform_query: Query<&Transform, With<Player>>,
   // TODO: use UiAssets
 ) {
-  let player_entity = query.get_single().unwrap();
+  if enemy_query.iter().count() > 3 {
+    return;
+  }
+
+  let player_transform = *player_transform_query.single();
+  let player_entity = player_entity_query.single();
 
   let near_player = move |In(entity): In<Entity>, transforms: Query<&Transform>| {
     let enemy_transform = transforms.get(entity).unwrap();
-    let player_transform = transforms.get(player_entity).unwrap();
 
     let distance = player_transform
       .translation
@@ -108,6 +120,15 @@ fn spawn_enemy(
   #[cfg(feature = "dev")]
   let state_machine = state_machine.set_trans_logging(true);
 
+  // we calculate the enemy position spawn based on the player position
+  // enemy will spawn at a random position around the player
+  // with a minumum radius of 100 and a maximum of 200
+  let mut rng = rand::thread_rng();
+  let angle = rng.gen_range(0.0..std::f32::consts::PI * 2.);
+  let distance = rng.gen_range(100.0..200.);
+  let enemy_x = player_transform.translation.x + angle.cos() * distance;
+  let enemy_y = player_transform.translation.y + angle.sin() * distance;
+
   // spawn enemy, define state machine behavior
   commands.spawn((
     // Despawn enemy on state change
@@ -123,7 +144,7 @@ fn spawn_enemy(
         custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
         ..default()
       },
-      transform: Transform::from_xyz(10., 10., 2.),
+      transform: Transform::from_xyz(enemy_x, enemy_y, 2.),
       ..default()
     },
     Enemy,

@@ -1,6 +1,12 @@
-use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
+pub mod cycle;
+pub mod enemy;
+pub mod player;
 
-use crate::{assets::UiAssets, enemy::EnemyPlugin, prelude::*};
+use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
+use enemy::EnemyPlugin;
+use player::PlayerPlugin;
+
+use crate::{assets::UiAssets, prelude::*};
 
 pub struct GamePlugin<S: States> {
   pub state: S,
