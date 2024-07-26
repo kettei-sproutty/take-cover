@@ -1,7 +1,7 @@
 mod prelude {
   pub use crate::app_state::{AppState, StateDespawnMarker};
   pub use crate::constants::*;
-  pub use crate::player::plugin::*;
+  pub use crate::player::*;
   pub use crate::utils::*;
   pub use bevy::prelude::*;
 }
