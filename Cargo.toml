@@ -15,6 +15,8 @@ log = { version = "*", features = [
   "max_level_debug",
   "release_max_level_warn",
 ] }
+rand = "0.8.5"
+seldom_state = "0.11.0"
 
 [dev-dependencies]
 rusty-hook = "0.11.2"

@@ -25,5 +25,8 @@
 		"vite-plugin-top-level-await": "^1.4.2",
 		"vite-plugin-wasm": "^3.3.0"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"clsx": "^2.1.1"
+	}
 }

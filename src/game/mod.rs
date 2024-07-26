@@ -1,4 +1,10 @@
+pub mod cycle;
+pub mod enemy;
+pub mod player;
+
 use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
+use enemy::EnemyPlugin;
+use player::PlayerPlugin;
 
 use crate::{assets::UiAssets, prelude::*};
 
@@ -10,6 +16,8 @@ impl<S: States> Plugin for GamePlugin<S> {
   fn build(&self, app: &mut App) {
     app.add_systems(OnEnter(self.state.clone()), setup_game);
     app.insert_resource(LevelSelection::index(0));
+
+    app.add_plugins((PlayerPlugin, EnemyPlugin));
   }
 }
 

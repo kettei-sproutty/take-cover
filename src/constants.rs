@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#[allow(dead_code)]
 pub mod colors {
   use bevy::color::{Color, Hsla};
 
@@ -12,3 +12,6 @@ pub mod colors {
   pub const PRIMARY_800: Color = Color::Hsla(Hsla::new(200., 10.3 / 100., 5.7 / 100., 1.));
   pub const PRIMARY_900: Color = Color::Hsla(Hsla::new(210., 14.3 / 100., 2.7 / 100., 1.));
 }
+
+pub const SPRITE_SIZE: f32 = 16.;
+pub const PLAYER_SPEED: f32 = SPRITE_SIZE;
