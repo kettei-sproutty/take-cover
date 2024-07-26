@@ -20,6 +20,7 @@ pub struct UiAssets {
 pub struct MainMenuAssets {
   pub music: Handle<AudioSource>,
   pub volume_waves_icon: Handle<Image>,
+  pub volume_stopped_icon: Handle<Image>,
 }
 
 impl Plugin for AssetsLoadingPlugin {
@@ -72,14 +73,17 @@ pub fn load_main_menu_audio_assets(
   // Loading all audio assets
   let music = asset_server.load("sounds/main_menu.wav");
   let volume_waves_icon = asset_server.load("icons/volume-waves.png");
+  let volume_stopped_icon = asset_server.load("icons/volume-mute.png");
 
   // Connect the assets to the loading tracker by `iyes_progress`
   loading.add(&music);
   loading.add(&volume_waves_icon);
+  loading.add(&volume_stopped_icon);
 
   // Insert the audio resources into the game
   commands.insert_resource(MainMenuAssets {
     music,
     volume_waves_icon,
+    volume_stopped_icon,
   });
 }

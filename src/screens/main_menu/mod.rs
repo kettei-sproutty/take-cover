@@ -33,8 +33,33 @@ impl<S: States> Plugin for MainMenuPlugin<S> {
       (setup_main_menu, play_main_menu_audio),
     );
     app.add_systems(Update, style_interaction);
-    app.add_systems(Update, action_on_press.after(style_interaction));
+    app.add_systems(Update, action_on_press.before(style_interaction));
+    app.add_systems(Update, check_audio_playback);
+    app.add_systems(OnExit(self.state.clone()), reset_mouse_icon);
   }
+}
+
+fn reset_mouse_icon(mut windows: Query<&mut Window>) {
+  let mut window = windows.single_mut();
+  window.cursor.icon = CursorIcon::Default;
+}
+
+fn check_audio_playback(
+  mut playback_query: Query<&mut AudioSink>,
+  mut audio_query: Query<&mut AudioButton, Changed<AudioButton>>,
+) {
+  let Ok(playback_settings) = playback_query.get_single_mut() else {
+    return;
+  };
+
+  let Ok(audio_status) = audio_query.get_single_mut() else {
+    return;
+  };
+
+  match audio_status.0 {
+    AudioStatus::Playing => playback_settings.toggle(),
+    AudioStatus::Stopped => playback_settings.toggle(),
+  };
 }
 
 fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<MainMenuAssets>) {
@@ -90,8 +115,7 @@ fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<
 
   let volume_icon = commands
     .spawn((
-      StateDespawnMarker,
-      ImageBundle {
+      ButtonBundle {
         style: Style {
           width: Val::Px(32.),
           height: Val::Px(32.),
@@ -103,6 +127,8 @@ fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<
         image: main_menu_ui.volume_waves_icon.clone().into(),
         ..Default::default()
       },
+      AudioButton(AudioStatus::Playing),
+      StateDespawnMarker,
     ))
     .id();
 
@@ -127,8 +153,16 @@ fn play_main_menu_audio(mut commands: Commands, audio: Res<MainMenuAssets>) {
 
 fn style_interaction(
   mut interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
+  mut audio_query: Query<
+    (&Interaction, &mut UiImage, &mut AudioButton),
+    (Changed<Interaction>, With<Button>),
+  >,
   mut text_query: Query<&mut Text>,
+  mut cursor_query: Query<&mut Window>,
+  main_menu_assets: Res<MainMenuAssets>,
 ) {
+  let mut window = cursor_query.single_mut();
+
   for (interaction, children) in &mut interaction_query {
     let mut text = text_query.get_mut(children[0]).unwrap();
     match interaction {
@@ -137,9 +171,34 @@ fn style_interaction(
       }
       Interaction::Hovered => {
         text.sections[0].style.color = colors::PRIMARY_200;
+        window.cursor.icon = CursorIcon::Pointer;
       }
       Interaction::None => {
         text.sections[0].style.color = colors::PRIMARY_300;
+        window.cursor.icon = CursorIcon::Default;
+      }
+    }
+  }
+
+  for (interaction, mut image, mut audio) in &mut audio_query {
+    match interaction {
+      Interaction::Pressed => {
+        audio.0 = match audio.0 {
+          AudioStatus::Playing => {
+            image.texture = main_menu_assets.volume_stopped_icon.clone();
+            AudioStatus::Stopped
+          }
+          AudioStatus::Stopped => {
+            image.texture = main_menu_assets.volume_waves_icon.clone();
+            AudioStatus::Playing
+          }
+        };
+      }
+      Interaction::Hovered => {
+        window.cursor.icon = CursorIcon::Pointer;
+      }
+      Interaction::None => {
+        window.cursor.icon = CursorIcon::Default;
       }
     }
   }

@@ -15,6 +15,7 @@ impl Plugin for DevToolsPlugin {
 
     app.add_plugins(RapierDebugRenderPlugin::default());
 
+    // Beware that when these plugins are active, cursor icon won't change
     // Add the World and State inspector plugins by `bevy-inspector-egui`
     // The interface can be toggled by pressing the `Escape` key
     app.add_plugins((
