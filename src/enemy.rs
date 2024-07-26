@@ -95,7 +95,7 @@ fn spawn_enemy(
     SpriteBundle {
       sprite: Sprite {
         color: Color::srgb(1.0, 0.0, 0.0),
-        custom_size: Some(Vec2::new(16., 16.)),
+        custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
         ..default()
       },
       transform: Transform::from_xyz(10., 10., 2.),

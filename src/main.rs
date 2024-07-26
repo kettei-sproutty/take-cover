@@ -1,7 +1,7 @@
 mod prelude {
   pub use crate::app_state::{AppState, StateDespawnMarker};
+  pub use crate::constants::*;
   pub use crate::player::plugin::*;
-  pub use crate::theme::*;
   pub use crate::utils::*;
   pub use bevy::prelude::*;
 }
@@ -16,12 +16,12 @@ use crate::prelude::*;
 
 mod app_state;
 mod assets;
+mod constants;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod enemy;
 mod player;
 mod screens;
-mod theme;
 mod utils;
 
 fn main() -> AppExit {
@@ -68,7 +68,9 @@ fn main() -> AppExit {
   app.add_plugins(crate::app_state::AppStatePlugin);
 
   // Physics
-  app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(16.0));
+  app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
+    SPRITE_SIZE,
+  ));
 
   // We use [`iyes_progress`](https://github.com/IyesGames/iyes_progress) to track when we are done loading assets and transition to the main menu
   app.add_plugins(

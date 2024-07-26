@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use seldom_state::{prelude::StateMachine, trigger::IntoTrigger};
 
-use crate::AppState;
+use crate::prelude::*;
 
 #[derive(Component)]
 pub struct Player {
@@ -54,13 +54,15 @@ pub fn init_player(mut commands: Commands) {
     SpriteBundle {
       sprite: Sprite {
         color: Color::srgb(0., 0., 0.),
-        custom_size: Some(Vec2::new(16., 16.)),
+        custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
         ..default()
       },
       transform: Transform::from_xyz(15., 15., 2.),
       ..Default::default()
     },
-    Player { speed: 16. },
+    Player {
+      speed: PLAYER_SPEED,
+    },
     GravityScale(0.),
     Idle,
   ));
