@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
@@ -18,6 +20,8 @@ struct Idle;
 struct Follow {
   target: Entity,
   speed: f32,
+  angle: f32,
+  player_radius: f32,
 }
 
 // #[derive(Clone, Component)]
@@ -51,6 +55,10 @@ impl Plugin for EnemyPlugin {
       Update,
       follow.run_if(in_state(AppState::InGame)).after(spawn_enemy),
     );
+    app.add_systems(
+      Update,
+      idle.run_if(in_state(AppState::InGame)).after(spawn_enemy),
+    );
   }
 }
 
@@ -64,14 +72,21 @@ fn follow(
     let target_position = player_transform.translation.truncate();
     let enemy_position = transform.translation.truncate();
 
-    let direction = target_position - enemy_position;
+    // describe a circle around the player
+    let point_in_circumference = target_position
+      + Vec2::new(
+        follow.angle.cos() * follow.player_radius,
+        follow.angle.sin() * follow.player_radius,
+      );
+
+    let direction = point_in_circumference - enemy_position;
     let distance = direction.length();
 
-    let velocity = if distance > 0. {
+    let velocity = if distance < 8. {
+      Vec2::ZERO
+    } else {
       let direction = direction / distance;
       direction * follow.speed
-    } else {
-      Vec2::ZERO
     };
 
     rb_vels.linvel = velocity;
@@ -81,38 +96,45 @@ fn follow(
 fn spawn_enemy(
   mut commands: Commands,
   enemy_query: Query<&Enemy>,
-  player_entity_query: Query<Entity, With<Player>>,
-  player_transform_query: Query<&Transform, With<Player>>,
-  // TODO: use UiAssets
+  player_query: Query<(&Transform, Entity), With<Player>>, // TODO: use UiAssets
 ) {
-  if enemy_query.iter().count() > 3 {
+  if enemy_query.iter().count() >= BASE_ENEMIES as usize {
     return;
   }
 
-  let player_transform = *player_transform_query.single();
-  let player_entity = player_entity_query.single();
+  let (player_initial_transform, player_entity) = player_query.get_single().unwrap();
 
   let near_player = move |In(entity): In<Entity>, transforms: Query<&Transform>| {
     let enemy_transform = transforms.get(entity).unwrap();
+    let player_transform = transforms.get(player_entity).unwrap();
 
-    let distance = player_transform
-      .translation
-      .truncate()
-      .distance(enemy_transform.translation.truncate());
+    let distance = f32::abs(
+      player_transform
+        .translation
+        .truncate()
+        .distance(enemy_transform.translation.truncate()),
+    );
 
     // TODO: move to Enemy struct
     match distance <= 200. {
-      true => Ok(distance),
-      false => Err(distance),
+      true => Ok(true),
+      false => Err(false),
     }
   };
+
+  // base circumference on BASE_ENEMIES
+  let angle = rand::thread_rng().gen_range(0.0..360.0) * PI / 180.0;
+  let circumference = BASE_ENEMIES * SPRITE_SIZE;
+  let radius = (circumference / (2.0 * PI)) + rand::thread_rng().gen_range(1.5..30.0);
 
   let state_machine = StateMachine::default()
     .trans::<Idle, _>(
       near_player,
       Follow {
         target: player_entity,
-        speed: 5.,
+        speed: rand::thread_rng().gen_range(PLAYER_SPEED..24.0),
+        angle,
+        player_radius: radius,
       },
     )
     .trans::<Follow, _>(near_player.not(), Idle);
@@ -122,19 +144,19 @@ fn spawn_enemy(
 
   // we calculate the enemy position spawn based on the player position
   // enemy will spawn at a random position around the player
-  // with a minumum radius of 100 and a maximum of 200
+  // with a minimum radius of 100 and a maximum of 200
   let mut rng = rand::thread_rng();
-  let angle = rng.gen_range(0.0..std::f32::consts::PI * 2.);
   let distance = rng.gen_range(100.0..200.);
-  let enemy_x = player_transform.translation.x + angle.cos() * distance;
-  let enemy_y = player_transform.translation.y + angle.sin() * distance;
+  let enemy_x = player_initial_transform.translation.x + angle.cos() * distance;
+  let enemy_y = player_initial_transform.translation.y + angle.sin() * distance;
 
   // spawn enemy, define state machine behavior
   commands.spawn((
-    // Despawn enemy on state change
+    // Despawn enemy on app state change
     StateDespawnMarker,
     Collider::cuboid(SPRITE_SIZE / 2., SPRITE_SIZE / 2.),
-    RigidBody::Dynamic,
+    // TODO: use transform and try removing any physics related thingy
+    RigidBody::KinematicVelocityBased,
     Velocity::zero(),
     GravityScale(0.),
     state_machine,
@@ -151,4 +173,10 @@ fn spawn_enemy(
     // initialize with Idle state
     Idle,
   ));
+}
+
+fn idle(mut query: Query<(&mut Velocity, &Idle), With<Enemy>>) {
+  for (mut velocity, _) in &mut query {
+    velocity.linvel = Vec2::ZERO;
+  }
 }
