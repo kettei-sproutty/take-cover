@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use seldom_state::prelude::*;
 
 use crate::prelude::*;
@@ -47,14 +48,28 @@ impl Plugin for EnemyPlugin {
   }
 }
 
-fn follow(// mut transforms: Query<&mut Transform>,
-  // follows: Query<(Entity, &Follow), With<Enemy>>,
-  // time: Res<Time>,
+fn follow(
+  mut enemy_query: Query<(&Follow, &mut Velocity, &Transform), With<Enemy>>,
+  player_query: Query<&Transform, With<Player>>,
 ) {
-  // for (entity, follow) in &follows {
-  //   let (speed, target) = (follow.speed, follow.target);
-  //   println!("{entity} is following {target} at {speed}");
-  // }
+  for (follow, mut rb_vels, transform) in enemy_query.iter_mut() {
+    let player_transform = player_query.single();
+
+    let target_position = player_transform.translation.truncate();
+    let enemy_position = transform.translation.truncate();
+
+    let direction = target_position - enemy_position;
+    let distance = direction.length();
+
+    let velocity = if distance > 0. {
+      let direction = direction / distance;
+      direction * follow.speed
+    } else {
+      Vec2::ZERO
+    };
+
+    rb_vels.linvel = velocity;
+  }
 }
 
 fn spawn_enemy(
@@ -80,18 +95,28 @@ fn spawn_enemy(
     }
   };
 
+  let state_machine = StateMachine::default()
+    .trans::<Idle, _>(
+      near_player,
+      Follow {
+        target: player_entity,
+        speed: 5.,
+      },
+    )
+    .trans::<Follow, _>(near_player.not(), Idle);
+
+  #[cfg(feature = "dev")]
+  let state_machine = state_machine.set_trans_logging(true);
+
   // spawn enemy, define state machine behavior
   commands.spawn((
-    StateMachine::default()
-      .trans::<Idle, _>(
-        near_player,
-        Follow {
-          target: player_entity,
-          speed: 5.,
-        },
-      )
-      .trans::<Follow, _>(near_player.not(), Idle)
-      .set_trans_logging(true),
+    // Despawn enemy on state change
+    StateDespawnMarker,
+    Collider::cuboid(SPRITE_SIZE / 2., SPRITE_SIZE / 2.),
+    RigidBody::Dynamic,
+    Velocity::zero(),
+    GravityScale(0.),
+    state_machine,
     SpriteBundle {
       sprite: Sprite {
         color: Color::srgb(1.0, 0.0, 0.0),
