@@ -1,6 +1,7 @@
 use bevy::input::common_conditions::input_toggle_active;
 use bevy::{dev_tools::states::log_transitions, prelude::*};
 use bevy_inspector_egui::quick::{StateInspectorPlugin, WorldInspectorPlugin};
+use bevy_rapier2d::render::RapierDebugRenderPlugin;
 
 use crate::AppState;
 
@@ -11,6 +12,8 @@ impl Plugin for DevToolsPlugin {
   fn build(&self, app: &mut App) {
     // Track all [`AppState`] transitions
     app.add_systems(Update, log_transitions::<AppState>);
+
+    app.add_plugins(RapierDebugRenderPlugin::default());
 
     // Add the World and State inspector plugins by `bevy-inspector-egui`
     // The interface can be toggled by pressing the `Escape` key
