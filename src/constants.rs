@@ -13,6 +13,9 @@ pub mod colors {
   pub const PRIMARY_900: Color = Color::Hsla(Hsla::new(210., 14.3 / 100., 2.7 / 100., 1.));
 }
 
-pub const BASE_ENEMIES: f32 = 15.0;
+pub const BASE_ENEMIES: f32 = 1.0;
+pub const ENEMY_CHARGING_TIME: f32 = 2.0;
+pub const ENEMY_READY_TIME: f32 = 0.5;
+pub const ENEMY_CHARGING_RANGE: f32 = SPRITE_SIZE * 3.0;
 pub const SPRITE_SIZE: f32 = 16.0;
 pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 3.0;
