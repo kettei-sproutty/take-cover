@@ -45,7 +45,7 @@ fn load_ui_assets(
   let font_sans = asset_server.load("fonts/Exo2.ttf");
   let font_mono = asset_server.load("fonts/JetBrainsMono.ttf");
   let atlas = asset_server.load("textures/1-bit/colored.png");
-  let planet = asset_server.load("levels/planet.ldtk");
+  let planet = asset_server.load("levels/walls.ldtk");
 
   // Connect the assets to the loading tracker by `iyes_progress`
   loading.add(&font_sans);

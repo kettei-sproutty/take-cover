@@ -120,7 +120,7 @@ fn spawn_meteor(
 
   let is_on_ground = |In(entity): In<Entity>, query: Query<&Transform>| {
     let transform = query.get(entity).unwrap();
-    transform.translation.z < 0.
+    transform.translation.z <= 0.
   };
 
   let state_machine = StateMachine::default().trans::<Falling, _>(is_on_ground, Impact);
