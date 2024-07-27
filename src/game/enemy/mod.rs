@@ -17,9 +17,9 @@ mod sprite;
 
 #[derive(Clone)]
 enum EnemyVariant {
-  Red,
+  Aqua,
   Purple,
-  Gray,
+  Green,
 }
 
 // TODO: add damage
@@ -36,11 +36,11 @@ impl Default for Enemy {
   fn default() -> Self {
     let variant = thread_rng().gen_range(0..2);
     let variant = if variant == 0 {
-      EnemyVariant::Gray
+      EnemyVariant::Aqua
     } else if variant == 1 {
       EnemyVariant::Purple
     } else {
-      EnemyVariant::Red
+      EnemyVariant::Green
     };
 
     Self {
