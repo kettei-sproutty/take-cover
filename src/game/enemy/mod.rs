@@ -1,14 +1,31 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{
+  prelude::*,
+  sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+};
 use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
 use seldom_state::prelude::*;
 
 use crate::prelude::*;
 
+// TODO: add damage
 #[derive(Component)]
-struct Enemy;
+struct Enemy {
+  attack_range: f32,
+}
+
+#[derive(Component)]
+struct AttackCone;
+
+impl Default for Enemy {
+  fn default() -> Self {
+    Self {
+      attack_range: SPRITE_SIZE * 3.0,
+    }
+  }
+}
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
@@ -24,21 +41,47 @@ struct Follow {
   player_radius: f32,
 }
 
-// #[derive(Clone, Component)]
-// #[component(storage = "SparseSet")]
-// struct Charging;
+#[allow(dead_code)]
+#[derive(Clone, Component)]
+#[component(storage = "SparseSet")]
+struct Charging {
+  attack_entity: Option<Entity>,
+  charging_time: f32,
+  range: f32,
+}
 
-// #[derive(Clone, Component)]
-// #[component(storage = "SparseSet")]
-// struct Ready;
+impl Default for Charging {
+  fn default() -> Self {
+    Self {
+      charging_time: ENEMY_CHARGING_TIME,
+      range: ENEMY_CHARGING_RANGE,
+      attack_entity: None,
+    }
+  }
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Component)]
+#[component(storage = "SparseSet")]
+struct Ready {
+  delay: f32,
+}
+
+impl Default for Ready {
+  fn default() -> Self {
+    Self {
+      delay: ENEMY_READY_TIME,
+    }
+  }
+}
 
 // #[derive(Clone, Component)]
 // #[component(storage = "SparseSet")]
 // struct Buffering;
 
-// #[derive(Clone, Component)]
-// #[component(storage = "SparseSet")]
-// struct Delivering;
+#[derive(Clone, Component)]
+#[component(storage = "SparseSet")]
+struct Delivering;
 
 pub struct EnemyPlugin;
 
@@ -58,6 +101,16 @@ impl Plugin for EnemyPlugin {
     app.add_systems(
       Update,
       idle.run_if(in_state(AppState::InGame)).after(spawn_enemy),
+    );
+    app.add_systems(
+      Update,
+      charge.run_if(in_state(AppState::InGame)).after(spawn_enemy),
+    );
+    app.add_systems(
+      Update,
+      orient_towards_player
+        .run_if(in_state(AppState::InGame))
+        .after(charge),
     );
   }
 }
@@ -96,7 +149,7 @@ fn follow(
 fn spawn_enemy(
   mut commands: Commands,
   enemy_query: Query<&Enemy>,
-  player_query: Query<(&Transform, Entity), With<Player>>, // TODO: use UiAssets
+  player_query: Query<(&Transform, Entity), With<Player>>,
 ) {
   if enemy_query.iter().count() >= BASE_ENEMIES as usize {
     return;
@@ -122,6 +175,22 @@ fn spawn_enemy(
     }
   };
 
+  let in_attack_range =
+    move |In(entity): In<Entity>, query: Query<&Transform>, enemy_query: Query<&Enemy>| {
+      let current_player_transform = query.get(player_entity).unwrap().translation.truncate();
+      let enemy_transform = query.get(entity).unwrap().translation.truncate();
+      let enemy_data = enemy_query.get(entity).unwrap();
+
+      let distance = current_player_transform.distance(enemy_transform);
+      match distance <= enemy_data.attack_range {
+        true => Ok(true),
+        false => Err(false),
+      }
+    };
+
+  let is_attack_charged = || false;
+  let has_ready_time_elapsed = || false;
+
   // base circumference on BASE_ENEMIES
   let angle = rand::thread_rng().gen_range(0.0..360.0) * PI / 180.0;
   let circumference = BASE_ENEMIES * SPRITE_SIZE;
@@ -132,12 +201,17 @@ fn spawn_enemy(
       near_player,
       Follow {
         target: player_entity,
-        speed: rand::thread_rng().gen_range(PLAYER_SPEED..24.0),
+        speed: rand::thread_rng().gen_range(16.0..24.0),
         angle,
         player_radius: radius,
       },
     )
-    .trans::<Follow, _>(near_player.not(), Idle);
+    .trans::<Follow, _>(near_player.not(), Idle)
+    .trans::<Idle, _>(in_attack_range, Charging::default())
+    .trans::<Follow, _>(in_attack_range, Charging::default())
+    .trans::<Charging, _>(is_attack_charged, Ready::default())
+    .trans::<Ready, _>(has_ready_time_elapsed, Delivering)
+    .trans::<Delivering, _>(|| true, Idle);
 
   #[cfg(feature = "dev")]
   let state_machine = state_machine.set_trans_logging(true);
@@ -169,7 +243,7 @@ fn spawn_enemy(
       transform: Transform::from_xyz(enemy_x, enemy_y, 2.),
       ..default()
     },
-    Enemy,
+    Enemy::default(),
     // initialize with Idle state
     Idle,
   ));
@@ -178,5 +252,68 @@ fn spawn_enemy(
 fn idle(mut query: Query<(&mut Velocity, &Idle), With<Enemy>>) {
   for (mut velocity, _) in &mut query {
     velocity.linvel = Vec2::ZERO;
+  }
+}
+
+fn charge(
+  mut commands: Commands,
+  mut materials: ResMut<Assets<ColorMaterial>>,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut query: Query<
+    (&mut Charging, Entity, &mut Velocity, &Transform),
+    (With<Enemy>, Without<Player>),
+  >,
+  player_query: Query<&Transform, (With<Player>, Without<Enemy>)>,
+) {
+  // spawn cone entity
+  let player_transform = player_query.get_single().unwrap();
+
+  for (mut charging, entity, mut velocity, transform) in &mut query {
+    if charging.attack_entity.is_some() {
+      continue;
+    };
+
+    velocity.linvel = Vec2::ZERO;
+
+    let shape = Mesh2dHandle(meshes.add(CircularSector::new(charging.range, 1.0)));
+    let material = materials.add(Color::srgb(0.0, 1.0, 0.0));
+
+    // TODO: angle is not initialized correctly
+    let angle =
+      (player_transform.translation.truncate() - transform.translation.truncate()).to_angle();
+
+    let cone = (
+      MaterialMesh2dBundle {
+        mesh: shape,
+        material,
+        transform: Transform {
+          translation: Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+          },
+          rotation: Quat::from_rotation_z(angle),
+          ..default()
+        },
+        ..default()
+      },
+      AttackCone,
+    );
+
+    let attack_entity = commands.spawn(cone).id();
+    commands.entity(entity).push_children(&[attack_entity]);
+    charging.attack_entity = Some(attack_entity);
+  }
+}
+
+fn orient_towards_player(
+  mut query: Query<(&mut Transform, &GlobalTransform), With<AttackCone>>,
+  player_query: Query<&Transform, (With<Player>, Without<AttackCone>)>,
+) {
+  let player_transform = player_query.get_single().unwrap().translation.truncate();
+  for (mut cone_transform, global_transform) in &mut query {
+    let angle =
+      (player_transform - global_transform.translation().truncate()).to_angle() - PI / 2.0;
+    cone_transform.rotation = Quat::from_rotation_z(angle);
   }
 }
