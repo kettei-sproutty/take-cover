@@ -17,13 +17,14 @@ pub const ANIMATION_RATE: f32 = 0.1;
 pub const BASE_ENEMIES: f32 = 1.0;
 pub const ENEMY_CHARGING_RANGE: f32 = SPRITE_SIZE * 3.0;
 pub const ENEMY_CHARGING_TIME: f32 = 2.0;
+pub const ENEMY_DEFAULT_SPRITE_INDEX: usize = 0;
 pub const ENEMY_READY_TIME: f32 = 0.5;
 pub const ENEMY_SPRITE_SIZE: f32 = 64.0;
 pub const SPRITE_SIZE: f32 = 16.0;
 pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 3.0;
 
 // z-indexes
-pub const PLAYER_Z_INDEX: f32 = 3.0;
+pub const PLAYER_Z_INDEX: f32 = 4.0;
 pub const CAMERA_Z_INDEX: f32 = 10.0;
-pub const ENEMY_Z_INDEX: f32 = 3.0;
+pub const ENEMY_Z_INDEX: f32 = 5.0;
 pub const ENEMY_ATTACK_GIZMO_Z_INDEX: f32 = 2.0;
