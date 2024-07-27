@@ -1,3 +1,4 @@
+pub mod common;
 pub mod cycle;
 pub mod enemy;
 pub mod player;
