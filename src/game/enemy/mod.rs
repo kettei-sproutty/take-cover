@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 
+use animations::{animate_sprite, AnimationIndices};
 use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
@@ -11,8 +12,7 @@ use sprite::get_idle_animation;
 
 use crate::prelude::*;
 
-use super::common::animate_sprite;
-
+mod animations;
 mod sprite;
 
 #[derive(Clone)]
@@ -76,9 +76,9 @@ struct Charging {
 impl Default for Charging {
   fn default() -> Self {
     Self {
+      attack_entity: None,
       charging_time: ENEMY_CHARGING_TIME,
       range: ENEMY_CHARGING_RANGE,
-      attack_entity: None,
     }
   }
 }
@@ -97,10 +97,6 @@ impl Default for Ready {
     }
   }
 }
-
-// #[derive(Clone, Component)]
-// #[component(storage = "SparseSet")]
-// struct Buffering;
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
@@ -242,7 +238,25 @@ fn spawn_enemy(
     .trans::<Follow, _>(in_attack_range, Charging::default())
     .trans::<Charging, _>(is_attack_charged, Ready::default())
     .trans::<Ready, _>(has_ready_time_elapsed, Delivering)
-    .trans::<Delivering, _>(|| true, Idle);
+    .trans::<Delivering, _>(|| true, Idle)
+    .on_enter::<Idle>(|entity| {
+      entity.insert(AnimationIndices { first: 0, last: 3 });
+    })
+    .on_enter::<Follow>(|entity| {
+      entity.insert(AnimationIndices { first: 0, last: 3 });
+    })
+    .on_enter::<Charging>(|entity| {
+      entity.insert(AnimationIndices { first: 7, last: 9 });
+    })
+    .on_enter::<Ready>(|entity| {
+      entity.insert(AnimationIndices { first: 8, last: 9 });
+    })
+    .on_enter::<Delivering>(|entity| {
+      entity.insert(AnimationIndices {
+        first: 23,
+        last: 27,
+      });
+    });
 
   #[cfg(feature = "dev")]
   let state_machine = state_machine.set_trans_logging(true);
@@ -256,10 +270,8 @@ fn spawn_enemy(
   let enemy_y = player_initial_transform.translation.y + angle.sin() * distance;
 
   let enemy = Enemy::default();
-  let (texture, texture_atlas, indices, timer) =
+  let (texture, texture_atlas, timer) =
     get_idle_animation(&enemy.variant, asset_server, texture_atlas_layouts);
-
-  println!("abc");
 
   // spawn enemy, define state machine behavior
   commands
@@ -271,7 +283,7 @@ fn spawn_enemy(
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
       GravityScale(0.0),
-      TransformBundle::from_transform(Transform::from_xyz(enemy_x, enemy_y, ENEMY_Z_INDEX)),
+      SpatialBundle::from_transform(Transform::from_xyz(enemy_x, enemy_y, ENEMY_Z_INDEX)),
       state_machine,
       enemy,
       // initialize with Idle state
@@ -285,11 +297,14 @@ fn spawn_enemy(
             ..default()
           },
           texture,
-          transform: Transform::from_xyz(20.0, 20.0, ENEMY_ATTACK_GIZMO_Z_INDEX),
+          transform: Transform::from_xyz(
+            ENEMY_SPRITE_SIZE * 0.5,
+            ENEMY_SPRITE_SIZE * 0.5,
+            ENEMY_ATTACK_GIZMO_Z_INDEX,
+          ),
           ..default()
         },
         texture_atlas,
-        indices,
         timer,
       ));
     });
