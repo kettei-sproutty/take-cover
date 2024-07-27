@@ -4,6 +4,8 @@ use crate::prelude::*;
 use rand::Rng;
 use seldom_state::prelude::*;
 
+use super::Score;
+
 #[derive(Component)]
 struct Meteor;
 
@@ -92,12 +94,11 @@ fn spawn_meteor(
   mut commands: Commands,
   mut query: Query<&mut Cycle>,
   mut next_state: ResMut<NextState<CycleState>>,
+  mut score: ResMut<Score>,
   player_query: Query<&Transform, With<Player>>,
   #[allow(unused_variables)] time: Res<Time>,
 ) {
   let mut cycle = query.get_single_mut().unwrap();
-
-  println!("Spawning meteor {}", cycle.meteors);
 
   // If there are no more meteors to spawn, reset the cycle.
   if cycle.meteors == 0 {
@@ -105,6 +106,7 @@ fn spawn_meteor(
     cycle.start = Instant::now();
     cycle.index += 1;
     cycle.meteors = CYCLE_WEIGHT * cycle.index;
+    score.0 += cycle.index * 10;
   };
 
   // If the delay has not passed, do not spawn a meteor.
@@ -135,6 +137,7 @@ fn spawn_meteor(
   };
 
   commands.spawn((
+    StateDespawnMarker,
     Meteor,
     state_machine,
     SpriteBundle {
@@ -176,6 +179,7 @@ fn check_impact(
     let player_position = player_transform.translation.truncate();
     let meteor_position = transform.translation.truncate();
 
+    // This doesn't work as expected.
     if player_position.distance(meteor_position) < SPRITE_SIZE {
       println!("Player hit by meteor");
       next_state.set(AppState::GameOver);
