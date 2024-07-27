@@ -10,10 +10,20 @@ use seldom_state::prelude::*;
 
 use crate::prelude::*;
 
+mod sprite;
+
+enum EnemyVariant {
+  Red,
+  Purple,
+  Gray,
+}
+
 // TODO: add damage
+#[allow(dead_code)]
 #[derive(Component)]
 struct Enemy {
   attack_range: f32,
+  variant: EnemyVariant,
 }
 
 #[derive(Component)]
@@ -21,8 +31,18 @@ struct AttackCone;
 
 impl Default for Enemy {
   fn default() -> Self {
+    let variant = thread_rng().gen_range(0..2);
+    let variant = if variant == 0 {
+      EnemyVariant::Gray
+    } else if variant == 1 {
+      EnemyVariant::Purple
+    } else {
+      EnemyVariant::Red
+    };
+
     Self {
       attack_range: SPRITE_SIZE * 3.0,
+      variant,
     }
   }
 }
@@ -240,7 +260,7 @@ fn spawn_enemy(
         custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
         ..default()
       },
-      transform: Transform::from_xyz(enemy_x, enemy_y, 2.),
+      transform: Transform::from_xyz(enemy_x, enemy_y, ENEMY_Z_INDEX),
       ..default()
     },
     Enemy::default(),
@@ -290,7 +310,7 @@ fn charge(
           translation: Vec3 {
             x: 0.0,
             y: 0.0,
-            z: 1.0,
+            z: ENEMY_ATTACK_GIZMO_Z_INDEX,
           },
           rotation: Quat::from_rotation_z(angle),
           ..default()
