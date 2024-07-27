@@ -59,7 +59,7 @@ pub fn init_player(mut commands: Commands) {
           custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
           ..default()
         },
-        transform: Transform::from_xyz(15., 15., 2.),
+        transform: Transform::from_xyz(15., 15., PLAYER_Z_INDEX),
         ..Default::default()
       },
       Player {
@@ -70,11 +70,7 @@ pub fn init_player(mut commands: Commands) {
     ))
     .with_children(|parent| {
       parent.spawn(Camera2dBundle {
-        transform: Transform::from_xyz(0., 0., 10.),
-        camera: Camera {
-          hdr: true,
-          ..Default::default()
-        },
+        transform: Transform::from_xyz(0., 0., CAMERA_Z_INDEX),
         projection: OrthographicProjection {
           scale: 0.4,
           ..Default::default()

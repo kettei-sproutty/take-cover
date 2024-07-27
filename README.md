@@ -7,6 +7,10 @@
 - [TheSeeker](https://github.com/TheSeekerGame/TheSeeker)
 - [bevy_quickstart](https://github.com/TheBevyFlock/bevy_quickstart)
 
+## Credits
+
+- [BackupMiles](https://github.com/BackupMiles)
+
 ## Assets
 
 - [Kenney](https://www.kenney.nl) - See LICENSE in [/assets/textures/1-bit/License.txt](/assets/textures/1-bit/License.txt)
