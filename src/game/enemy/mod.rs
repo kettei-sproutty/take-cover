@@ -7,11 +7,15 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
 use seldom_state::prelude::*;
+use sprite::get_idle_animation;
 
 use crate::prelude::*;
 
+use super::common::animate_sprite;
+
 mod sprite;
 
+#[derive(Clone)]
 enum EnemyVariant {
   Red,
   Purple,
@@ -19,8 +23,7 @@ enum EnemyVariant {
 }
 
 // TODO: add damage
-#[allow(dead_code)]
-#[derive(Component)]
+#[derive(Clone, Component)]
 struct Enemy {
   attack_range: f32,
   variant: EnemyVariant,
@@ -116,6 +119,12 @@ impl Plugin for EnemyPlugin {
     );
     app.add_systems(
       Update,
+      animate_sprite
+        .after(spawn_enemy)
+        .run_if(in_state(AppState::InGame)),
+    );
+    app.add_systems(
+      Update,
       follow.run_if(in_state(AppState::InGame)).after(spawn_enemy),
     );
     app.add_systems(
@@ -170,6 +179,8 @@ fn spawn_enemy(
   mut commands: Commands,
   enemy_query: Query<&Enemy>,
   player_query: Query<(&Transform, Entity), With<Player>>,
+  asset_server: Res<AssetServer>,
+  texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
   if enemy_query.iter().count() >= BASE_ENEMIES as usize {
     return;
@@ -244,29 +255,44 @@ fn spawn_enemy(
   let enemy_x = player_initial_transform.translation.x + angle.cos() * distance;
   let enemy_y = player_initial_transform.translation.y + angle.sin() * distance;
 
+  let enemy = Enemy::default();
+  let (texture, texture_atlas, indices, timer) =
+    get_idle_animation(&enemy.variant, asset_server, texture_atlas_layouts);
+
+  println!("abc");
+
   // spawn enemy, define state machine behavior
-  commands.spawn((
-    // Despawn enemy on app state change
-    StateDespawnMarker,
-    Collider::cuboid(SPRITE_SIZE / 2., SPRITE_SIZE / 2.),
-    // TODO: use transform and try removing any physics related thingy
-    RigidBody::KinematicVelocityBased,
-    Velocity::zero(),
-    GravityScale(0.),
-    state_machine,
-    SpriteBundle {
-      sprite: Sprite {
-        color: Color::srgb(1.0, 0.0, 0.0),
-        custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
-        ..default()
-      },
-      transform: Transform::from_xyz(enemy_x, enemy_y, ENEMY_Z_INDEX),
-      ..default()
-    },
-    Enemy::default(),
-    // initialize with Idle state
-    Idle,
-  ));
+  commands
+    .spawn((
+      // Despawn enemy on app state change
+      StateDespawnMarker,
+      Collider::cuboid(SPRITE_SIZE / 2., SPRITE_SIZE / 2.),
+      // TODO: use transform and try removing any physics related thingy
+      RigidBody::KinematicVelocityBased,
+      Velocity::zero(),
+      GravityScale(0.0),
+      TransformBundle::from_transform(Transform::from_xyz(enemy_x, enemy_y, ENEMY_Z_INDEX)),
+      state_machine,
+      enemy,
+      // initialize with Idle state
+      Idle,
+    ))
+    .with_children(|parent| {
+      parent.spawn((
+        SpriteBundle {
+          sprite: Sprite {
+            custom_size: Some(Vec2::new(ENEMY_SPRITE_SIZE, ENEMY_SPRITE_SIZE)),
+            ..default()
+          },
+          texture,
+          transform: Transform::from_xyz(20.0, 20.0, ENEMY_ATTACK_GIZMO_Z_INDEX),
+          ..default()
+        },
+        texture_atlas,
+        indices,
+        timer,
+      ));
+    });
 }
 
 fn idle(mut query: Query<(&mut Velocity, &Idle), With<Enemy>>) {
