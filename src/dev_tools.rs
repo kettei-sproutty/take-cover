@@ -1,9 +1,8 @@
-use bevy::input::common_conditions::input_toggle_active;
-use bevy::{dev_tools::states::log_transitions, prelude::*};
+use bevy::{dev_tools::states::log_transitions, input::common_conditions::input_toggle_active};
 use bevy_inspector_egui::quick::{StateInspectorPlugin, WorldInspectorPlugin};
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 
-use crate::AppState;
+use crate::prelude::*;
 
 /// A Bevy plugin that runs only when the `dev` feature is enabled.
 pub struct DevToolsPlugin;
@@ -21,6 +20,8 @@ impl Plugin for DevToolsPlugin {
     app.add_plugins((
       WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
       StateInspectorPlugin::<AppState>::default()
+        .run_if(input_toggle_active(true, KeyCode::Escape)),
+      StateInspectorPlugin::<CycleState>::default()
         .run_if(input_toggle_active(true, KeyCode::Escape)),
     ));
   }

@@ -59,7 +59,7 @@ pub fn init_player(mut commands: Commands) {
           custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
           ..default()
         },
-        transform: Transform::from_xyz(15., 15., PLAYER_Z_INDEX),
+        transform: Transform::from_xyz(320., 320., PLAYER_Z_INDEX),
         ..Default::default()
       },
       Player {

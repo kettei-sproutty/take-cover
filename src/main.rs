@@ -3,7 +3,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use game::GamePlugin;
 use iyes_progress::prelude::*;
-use screens::{loading::LoadscreenPlugin, main_menu::MainMenuPlugin};
+use screens::{game_over::GameOverPlugin, loading::LoadscreenPlugin, main_menu::MainMenuPlugin};
 
 use crate::prelude::*;
 
@@ -82,6 +82,9 @@ fn main() -> AppExit {
     },
     GamePlugin {
       state: AppState::InGame,
+    },
+    GameOverPlugin {
+      state: AppState::GameOver,
     },
     AssetsLoadingPlugin,
   ));

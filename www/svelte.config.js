@@ -6,7 +6,7 @@ export default {
   preprocess: vitePreprocess(),
 	kit: {
     paths: {
-      base: process.env.NODE_ENV === 'production' ? '/sveltekit-github-pages' : '',
+      base: process.env.NODE_ENV === 'production' ? '/take-cover' : '',
     },
 		adapter: adapter({
 			pages: 'build',

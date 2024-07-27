@@ -128,7 +128,6 @@ fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<
         ..Default::default()
       },
       AudioButton(AudioStatus::Playing),
-      StateDespawnMarker,
     ))
     .id();
 
@@ -144,7 +143,7 @@ fn play_main_menu_audio(mut commands: Commands, audio: Res<MainMenuAssets>) {
       source: audio.music.clone(),
       settings: PlaybackSettings {
         mode: PlaybackMode::Loop,
-        volume: Volume::new(0.2),
+        volume: Volume::new(0.),
         ..Default::default()
       },
     },

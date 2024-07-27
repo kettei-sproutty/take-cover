@@ -33,6 +33,10 @@ pub enum AppState {
   /// The `game` state of the application.
   /// In this state the application is running the game.
   InGame,
+  /// The `game_over` state of the application.
+  /// In this state the application is displaying the game over screen.
+  /// The user can restart the game or return to the main menu.
+  GameOver,
 }
 
 #[allow(dead_code)]
