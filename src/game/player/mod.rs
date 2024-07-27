@@ -71,6 +71,10 @@ pub fn init_player(mut commands: Commands) {
     .with_children(|parent| {
       parent.spawn(Camera2dBundle {
         transform: Transform::from_xyz(0., 0., 10.),
+        camera: Camera {
+          hdr: true,
+          ..Default::default()
+        },
         projection: OrthographicProjection {
           scale: 0.4,
           ..Default::default()

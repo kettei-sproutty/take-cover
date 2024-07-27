@@ -19,3 +19,11 @@ pub const ENEMY_READY_TIME: f32 = 0.5;
 pub const ENEMY_CHARGING_RANGE: f32 = SPRITE_SIZE * 3.0;
 pub const SPRITE_SIZE: f32 = 16.0;
 pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 3.0;
+/// The duration of a cycle, expressed in seconds.
+pub const CYCLE_DURATION: f32 = 5.0;
+/// The weight of a cycle, expressed in arbitrary units.
+/// Every unit of weight is equivalent of 1 falling meteor.
+pub const CYCLE_WEIGHT: usize = 5;
+#[allow(dead_code)]
+/// The delay between meteor spawns, expressed in seconds.
+pub const METEOR_SPAWN_DELAY: f32 = 0.5;
