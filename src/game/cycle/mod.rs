@@ -79,7 +79,7 @@ fn check_cycle_state(mut next_state: ResMut<NextState<CycleState>>, cycle: Query
   }
 }
 
-fn init_cycle(mut commands: Commands) {
+fn init_cycle(mut commands: Commands, mut next_state: ResMut<NextState<CycleState>>) {
   commands.spawn((
     StateDespawnMarker,
     Cycle {
@@ -88,6 +88,8 @@ fn init_cycle(mut commands: Commands) {
       index: 1,
     },
   ));
+
+  next_state.set(CycleState::Standard);
 }
 
 fn spawn_meteor(
