@@ -1,7 +1,6 @@
 use std::time::Instant;
 
 use crate::prelude::*;
-use bevy_rapier2d::prelude::*;
 use rand::Rng;
 use seldom_state::prelude::*;
 
@@ -31,6 +30,9 @@ struct DelayTimer {
 }
 
 #[derive(Component)]
+struct FallSpeed(f32);
+
+#[derive(Component)]
 struct Cycle {
   // TODO: use a timer instead of Instant
   start: Instant,
@@ -57,7 +59,13 @@ impl Plugin for CyclePlugin {
         .run_if(in_state(CycleState::Meteors))
         .run_if(in_state(AppState::InGame)),
     );
-    app.add_systems(Update, check_impact);
+    app.add_systems(
+      Update,
+      check_impact
+        .run_if(in_state(CycleState::Meteors))
+        .run_if(in_state(AppState::InGame)),
+    );
+    app.add_systems(Update, falling_meteor.run_if(in_state(AppState::InGame)));
   }
 }
 
@@ -106,12 +114,9 @@ fn spawn_meteor(
   //   return;
   // };
 
-  let is_on_ground = |In(entity): In<Entity>, _: Query<&Transform>| {
-    if true {
-      Ok(entity)
-    } else {
-      Err(entity)
-    }
+  let is_on_ground = |In(entity): In<Entity>, query: Query<&Transform>| {
+    let transform = query.get(entity).unwrap();
+    transform.translation.z < 0.
   };
 
   let state_machine = StateMachine::default().trans::<Falling, _>(is_on_ground, Impact);
@@ -132,10 +137,6 @@ fn spawn_meteor(
   commands.spawn((
     Meteor,
     state_machine,
-    Collider::ball(SPRITE_SIZE / 2.),
-    RigidBody::KinematicVelocityBased,
-    Velocity::zero(),
-    GravityScale(0.),
     SpriteBundle {
       sprite: Sprite {
         color: Color::srgb(0.0, 0.0, 1.0),
@@ -146,16 +147,29 @@ fn spawn_meteor(
       ..default()
     },
     Falling,
+    FallSpeed(rand::thread_rng().gen_range(0.1..0.3)),
   ));
 
   cycle.meteors -= 1;
+}
+
+fn falling_meteor(
+  #[allow(unused_variables)] time: Res<Time>,
+  mut meteor_query: Query<(&mut Transform, &FallSpeed), With<Falling>>,
+) {
+  for (mut transform, fall_speed) in &mut meteor_query {
+    transform.translation.z -= fall_speed.0;
+    println!("Meteor z: {}", transform.translation.z);
+    // TODO: change scale based on z
+    // transform.scale = Vec3::splat(1.0 - transform.translation.z / 10.0);
+  }
 }
 
 fn check_impact(
   mut commands: Commands,
   impact_query: Query<(Entity, &Transform), With<Impact>>,
   player_query: Query<&Transform, With<Player>>,
-  // mut next_state: ResMut<NextState<AppState>>,
+  mut next_state: ResMut<NextState<AppState>>,
 ) {
   for (entity, transform) in &mut impact_query.iter() {
     let player_transform = player_query.single();
@@ -164,7 +178,7 @@ fn check_impact(
 
     if player_position.distance(meteor_position) < SPRITE_SIZE {
       println!("Player hit by meteor");
-      // next_state.set(AppState::GameOver);
+      next_state.set(AppState::GameOver);
     }
 
     commands.entity(entity).despawn();
