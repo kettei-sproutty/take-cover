@@ -534,11 +534,9 @@ fn check_for_collisions(
   mut next_state: ResMut<NextState<AppState>>,
 ) {
   for collision in collision_events.read() {
-    println!("collision event");
     if let CollisionEvent::Started(first_entity, entity, CollisionEventFlags::SENSOR) = collision {
       let p = player_query.get_single().unwrap();
       if p == *first_entity || p == *entity {
-        println!("Player was hit");
         next_state.set(AppState::GameOver);
       }
     }
