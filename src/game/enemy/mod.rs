@@ -1,6 +1,5 @@
 use std::{f32::consts::PI, time::Duration};
 
-use animations::{animate_sprite, AnimationIndices};
 use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
@@ -12,11 +11,13 @@ use rand::prelude::*;
 use seldom_state::prelude::*;
 use sprite::get_idle_animation;
 
-use crate::prelude::*;
+use crate::{assets::UiAssets, prelude::*};
 
-use super::common::{tick_despawn_timer, DespawnTimer};
+use super::common::{
+  animations::{animate_sprite, AnimationIndices},
+  tick_despawn_timer, DespawnTimer,
+};
 
-mod animations;
 mod effects;
 mod sprite;
 
@@ -213,12 +214,12 @@ fn follow(
 }
 
 fn spawn_enemy(
-  mut commands: Commands,
-  mut effects: ResMut<Assets<EffectAsset>>,
   enemy_query: Query<&Enemy>,
   player_query: Query<(&Transform, Entity), With<Player>>,
-  asset_server: Res<AssetServer>,
   texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+  ui_assets: Res<UiAssets>,
+  mut commands: Commands,
+  mut effects: ResMut<Assets<EffectAsset>>,
 ) {
   if enemy_query.iter().count() >= BASE_ENEMIES as usize {
     return;
@@ -328,7 +329,7 @@ fn spawn_enemy(
 
   let enemy = Enemy::default();
   let (texture, texture_atlas, timer) =
-    get_idle_animation(&enemy.variant, asset_server, texture_atlas_layouts);
+    get_idle_animation(&enemy.variant, ui_assets, texture_atlas_layouts);
 
   let effect = effects.add(make_dirt_effect());
 
