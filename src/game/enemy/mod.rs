@@ -12,6 +12,8 @@ use sprite::get_idle_animation;
 
 use crate::prelude::*;
 
+use super::common::{tick_despawn_timer, DespawnTimer};
+
 mod animations;
 mod sprite;
 
@@ -114,7 +116,7 @@ struct DeliveringEvent(Entity, f32);
 impl Default for Delivering {
   fn default() -> Self {
     Self {
-      timer: Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once),
+      timer: Timer::from_seconds(ENEMY_ATTACK_COOLDOWN, TimerMode::Once),
       radius: ENEMY_CHARGING_RANGE,
     }
   }
@@ -179,7 +181,7 @@ impl Plugin for EnemyPlugin {
     );
     app.add_systems(
       Update,
-      check_for_collisions.run_if(in_state(AppState::InGame)),
+      (check_for_collisions, tick_despawn_timer).run_if(in_state(AppState::InGame)),
     );
   }
 }
@@ -338,6 +340,7 @@ fn spawn_enemy(
       // Despawn enemy on app state change
       StateDespawnMarker,
       Collider::cuboid(ENEMY_SPRITE_SIZE / 2., ENEMY_SPRITE_SIZE / 2.),
+      CollisionGroups::new(ENEMY_GROUP, Group::empty()),
       // TODO: use transform and try removing any physics related thingy
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
@@ -350,6 +353,7 @@ fn spawn_enemy(
     ))
     .with_children(|parent| {
       parent.spawn((
+        StateDespawnMarker,
         SpriteBundle {
           sprite: Sprite {
             custom_size: Some(Vec2::new(ENEMY_SPRITE_SIZE, ENEMY_SPRITE_SIZE)),
@@ -403,6 +407,7 @@ fn charge(
 
     // spawn cone entity
     let cone = (
+      StateDespawnMarker,
       MaterialMesh2dBundle {
         mesh: shape,
         material,
@@ -479,14 +484,20 @@ fn handle_delivering_event(
         }
 
         commands.entity(entity).remove_children(&[*child]);
-        commands.entity(*child).despawn();
+        commands.entity(*child).despawn_recursive();
 
         // add collider for a frame
         let collider = commands
           .spawn(Collider::ball(radius))
+          .insert(StateDespawnMarker)
           .insert(ActiveEvents::COLLISION_EVENTS)
           .insert(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC)
           .insert(Sensor)
+          .insert(CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP))
+          .insert(DespawnTimer(Timer::from_seconds(
+            ENEMY_DELIVER_TIME,
+            TimerMode::Once,
+          )))
           .id();
         commands.entity(entity).push_children(&[collider]);
       }
@@ -520,6 +531,7 @@ fn deliver() {}
 fn check_for_collisions(
   mut collision_events: EventReader<CollisionEvent>,
   player_query: Query<Entity, With<Player>>,
+  mut next_state: ResMut<NextState<AppState>>,
 ) {
   for collision in collision_events.read() {
     println!("collision event");
@@ -527,6 +539,7 @@ fn check_for_collisions(
       let p = player_query.get_single().unwrap();
       if p == *first_entity || p == *entity {
         println!("Player was hit");
+        next_state.set(AppState::GameOver);
       }
     }
   }
