@@ -1,17 +1,50 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use seldom_state::{prelude::StateMachine, trigger::IntoTrigger};
+use seldom_state::{
+  prelude::{AnyState, StateMachine},
+  trigger::IntoTrigger,
+};
 
 use crate::prelude::*;
 
 #[derive(Component)]
 pub struct Player {
+  dodge_cooldown: Timer,
+  has_ever_dodged: bool,
+  last_direction: Vec2,
   speed: f32,
+}
+
+impl Default for Player {
+  fn default() -> Self {
+    Self {
+      dodge_cooldown: Timer::from_seconds(DODGING_COOLDOWN, TimerMode::Once),
+      has_ever_dodged: false,
+      last_direction: Vec2::ZERO,
+      speed: PLAYER_SPEED,
+    }
+  }
 }
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
 struct Idle;
+
+#[derive(Clone, Component)]
+#[component(storage = "SparseSet")]
+struct Dodge {
+  is_dodging: bool,
+  timer: Timer,
+}
+
+impl Default for Dodge {
+  fn default() -> Self {
+    Self {
+      is_dodging: false,
+      timer: Timer::from_seconds(DODGING_TIMER, TimerMode::Once),
+    }
+  }
+}
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
@@ -24,7 +57,12 @@ impl Plugin for PlayerPlugin {
     app.add_systems(OnEnter(AppState::InGame), init_player);
     app.add_systems(
       Update,
-      move_player
+      (
+        move_player,
+        dodge,
+        tick_decelerate_timer,
+        tick_dodge_cooldown_timer,
+      )
         .run_if(in_state(AppState::InGame))
         .after(init_player),
     );
@@ -43,16 +81,39 @@ pub fn init_player(mut commands: Commands) {
       false
     };
 
+  let has_dodged = move |In(entity): In<Entity>,
+                         query: Query<&Player, Without<Dodge>>,
+                         keyboard: Res<ButtonInput<KeyCode>>| {
+    let player_result = query.get(entity);
+    match player_result {
+      Ok(player) => {
+        (player.dodge_cooldown.finished() || !player.has_ever_dodged)
+          && keyboard.any_just_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+      }
+      Err(_) => false,
+    }
+  };
+
+  let is_dodge_done = move |In(entity): In<Entity>, query: Query<&Dodge, With<Player>>| {
+    let player = query.get(entity);
+    if let Ok(dodge) = player {
+      return dodge.timer.finished();
+    };
+
+    false
+  };
   commands
     .spawn((
       StateDespawnMarker,
       StateMachine::default()
         .trans::<Idle, _>(has_moved, Move)
         .trans::<Move, _>(has_moved.not(), Idle)
+        .trans::<Dodge, _>(is_dodge_done, Idle)
+        .trans::<AnyState, _>(has_dodged, Dodge::default())
         .set_trans_logging(true),
       Collider::cuboid(8., 8.),
       CollisionGroups::new(PLAYER_GROUP, ATTACK_GROUP),
-      (ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC),
+      (ActiveCollisionTypes::all()),
       ActiveEvents::COLLISION_EVENTS,
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
@@ -65,9 +126,7 @@ pub fn init_player(mut commands: Commands) {
         transform: Transform::from_xyz(320., 320., PLAYER_Z_INDEX),
         ..Default::default()
       },
-      Player {
-        speed: PLAYER_SPEED,
-      },
+      Player::default(),
       GravityScale(0.),
       Idle,
     ))
@@ -85,9 +144,9 @@ pub fn init_player(mut commands: Commands) {
 
 fn move_player(
   keyboard_input: Res<ButtonInput<KeyCode>>,
-  mut player_info: Query<(&Player, &mut Velocity)>,
+  mut player_info: Query<(&mut Player, &mut Velocity), Without<Dodge>>,
 ) {
-  for (player, mut rb_vels) in &mut player_info {
+  for (mut player, mut rb_vels) in &mut player_info {
     let up = keyboard_input.any_pressed([KeyCode::KeyW, KeyCode::ArrowUp]);
     let down = keyboard_input.any_pressed([KeyCode::KeyS, KeyCode::ArrowDown]);
     let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
@@ -101,5 +160,36 @@ fn move_player(
     // Update the velocity on the rigid_body_component,
     // the bevy_rapier plugin will update the Sprite transform.
     rb_vels.linvel = move_delta * player.speed;
+    player.last_direction = rb_vels.linvel;
+  }
+}
+
+fn dodge(mut player_query: Query<(&mut Dodge, &mut Player, &mut Velocity)>) {
+  let player = player_query.get_single_mut();
+  #[allow(clippy::single_match)]
+  match player {
+    Ok((mut dodge, mut usable_player, mut velocity)) => {
+      if dodge.is_dodging {
+        return;
+      }
+
+      usable_player.dodge_cooldown.reset();
+      usable_player.has_ever_dodged = true;
+      dodge.is_dodging = true;
+      velocity.linvel = usable_player.last_direction * DODGING_SPEED;
+    }
+    Err(_) => (),
+  };
+}
+
+fn tick_decelerate_timer(mut timer_query: Query<&mut Dodge, With<Player>>, time: Res<Time>) {
+  for mut dodge in &mut timer_query {
+    dodge.timer.tick(time.delta());
+  }
+}
+
+fn tick_dodge_cooldown_timer(mut query: Query<&mut Player>, time: Res<Time>) {
+  for mut player in &mut query {
+    player.dodge_cooldown.tick(time.delta());
   }
 }

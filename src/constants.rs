@@ -17,6 +17,9 @@ pub mod colors {
 
 pub const ANIMATION_RATE: f32 = 0.1;
 pub const BASE_ENEMIES: f32 = 10.0;
+pub const DODGING_SPEED: f32 = 8.0;
+pub const DODGING_TIMER: f32 = 0.15;
+pub const DODGING_COOLDOWN: f32 = 4.0;
 pub const ENEMY_CHARGING_RANGE: f32 = SPRITE_SIZE * 3.0;
 pub const ENEMY_CHARGING_TIME: f32 = 2.0;
 pub const ENEMY_DEFAULT_SPRITE_INDEX: usize = 0;
