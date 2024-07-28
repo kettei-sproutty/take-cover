@@ -131,7 +131,7 @@ pub fn init_player(
         .set_trans_logging(true),
       Collider::cuboid(8., 8.),
       CollisionGroups::new(PLAYER_GROUP, ATTACK_GROUP),
-      (ActiveCollisionTypes::all()),
+      ActiveCollisionTypes::all(),
       SpatialBundle::from_transform(Transform::from_xyz(320.0, 320.0, PLAYER_Z_INDEX)),
       ActiveEvents::COLLISION_EVENTS,
       RigidBody::KinematicVelocityBased,
