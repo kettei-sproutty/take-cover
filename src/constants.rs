@@ -22,7 +22,6 @@ pub const ENEMY_CHARGING_TIME: f32 = 2.0;
 pub const ENEMY_DEFAULT_SPRITE_INDEX: usize = 0;
 pub const ENEMY_READY_TIME: f32 = 0.5;
 pub const ENEMY_DELIVER_TIME: f32 = 1.0;
-pub const ENEMY_ATTACK_COOLDOWN: f32 = 0.5;
 pub const READY_FLICKER_FREQUENCY: f32 = 40.0;
 pub const READY_FLICKER_WAVELENGTH: f32 = 0.5;
 pub const ENEMY_SPRITE_SIZE: f32 = 64.0;

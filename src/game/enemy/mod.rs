@@ -93,12 +93,14 @@ impl Default for Charging {
 #[component(storage = "SparseSet")]
 struct Ready {
   timer: Timer,
+  radius: f32,
 }
 
 impl Default for Ready {
   fn default() -> Self {
     Self {
       timer: Timer::from_seconds(ENEMY_READY_TIME, TimerMode::Once),
+      radius: ENEMY_CHARGING_RANGE,
     }
   }
 }
@@ -107,7 +109,6 @@ impl Default for Ready {
 #[component(storage = "SparseSet")]
 struct Delivering {
   timer: Timer,
-  radius: f32,
 }
 
 #[derive(Event)]
@@ -116,8 +117,7 @@ struct DeliveringEvent(Entity, f32);
 impl Default for Delivering {
   fn default() -> Self {
     Self {
-      timer: Timer::from_seconds(ENEMY_ATTACK_COOLDOWN, TimerMode::Once),
-      radius: ENEMY_CHARGING_RANGE,
+      timer: Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once),
     }
   }
 }
@@ -165,17 +165,11 @@ impl Plugin for EnemyPlugin {
         .run_if(in_state(AppState::InGame))
         .after(spawn_enemy),
     );
-    app.add_systems(
-      Update,
-      (deliver, tick_delivery_timer)
-        .run_if(in_state(AppState::InGame))
-        .after(spawn_enemy),
-    );
 
     app.add_event::<DeliveringEvent>();
     app.add_systems(
       Update,
-      handle_delivering_event
+      (handle_delivering_event, tick_delivery_timer)
         .run_if(in_state(AppState::InGame))
         .after(spawn_enemy),
     );
@@ -444,22 +438,22 @@ fn tick_charge_timer(mut query: Query<&mut Charging, With<Enemy>>, time: Res<Tim
   }
 }
 
-fn tick_delivery_timer(
-  mut query: Query<(&mut Delivering, Entity), With<Enemy>>,
+fn tick_ready_timer(
+  mut evt_writer: EventWriter<DeliveringEvent>,
+  mut query: Query<(&mut Ready, Entity), With<Enemy>>,
   time: Res<Time>,
-  mut ev_writer: EventWriter<DeliveringEvent>,
 ) {
-  for (mut delivering_data, entity) in query.iter_mut() {
-    delivering_data.timer.tick(time.delta());
-    if delivering_data.timer.just_finished() {
-      ev_writer.send(DeliveringEvent(entity, delivering_data.radius));
+  for (mut ready_data, entity) in query.iter_mut() {
+    ready_data.timer.tick(time.delta());
+    if ready_data.timer.just_finished() {
+      evt_writer.send(DeliveringEvent(entity, ready_data.radius));
     }
   }
 }
 
-fn tick_ready_timer(mut query: Query<&mut Ready, With<Enemy>>, time: Res<Time>) {
-  for mut ready_data in query.iter_mut() {
-    ready_data.timer.tick(time.delta());
+fn tick_delivery_timer(mut query: Query<&mut Delivering, With<Enemy>>, time: Res<Time>) {
+  for mut delivery_data in query.iter_mut() {
+    delivery_data.timer.tick(time.delta());
   }
 }
 
@@ -524,9 +518,6 @@ fn get_ready(
     }
   }
 }
-
-// instantiate collider
-fn deliver() {}
 
 fn check_for_collisions(
   mut collision_events: EventReader<CollisionEvent>,
