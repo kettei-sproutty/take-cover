@@ -4,8 +4,13 @@ use seldom_state::{
   prelude::{AnyState, StateMachine},
   trigger::IntoTrigger,
 };
+use sprite::get_main_animation;
 
-use crate::prelude::*;
+use crate::{assets::UiAssets, prelude::*};
+
+use super::common::animations::AnimationIndices;
+
+mod sprite;
 
 #[derive(Component)]
 pub struct Player {
@@ -50,10 +55,6 @@ impl Default for Dodge {
 #[component(storage = "SparseSet")]
 struct Move;
 
-#[allow(dead_code)]
-#[derive(Component)]
-struct Dash(Timer);
-
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -73,7 +74,11 @@ impl Plugin for PlayerPlugin {
   }
 }
 
-pub fn init_player(mut commands: Commands) {
+pub fn init_player(
+  mut commands: Commands,
+  texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+  ui_assets: Res<UiAssets>,
+) {
   let has_moved =
     move |In(entity): In<Entity>,
           query: Query<&KinematicCharacterControllerOutput, With<Player>>| {
@@ -106,6 +111,9 @@ pub fn init_player(mut commands: Commands) {
 
     false
   };
+
+  let (texture, atlas, animation_timer) = get_main_animation(texture_atlas_layouts, ui_assets);
+
   commands
     .spawn((
       StateDespawnMarker,
@@ -114,28 +122,39 @@ pub fn init_player(mut commands: Commands) {
         .trans::<Move, _>(has_moved.not(), Idle)
         .trans::<Dodge, _>(is_dodge_done, Idle)
         .trans::<AnyState, _>(has_dodged, Dodge::default())
+        .on_enter::<Idle>(|entity| {
+          entity.insert(AnimationIndices { first: 0, last: 10 });
+        })
+        .on_enter::<Move>(|entity| {
+          entity.insert(AnimationIndices { first: 0, last: 10 });
+        })
         .set_trans_logging(true),
       Collider::cuboid(8., 8.),
       CollisionGroups::new(PLAYER_GROUP, ATTACK_GROUP),
-      (ActiveCollisionTypes::all()),
+      ActiveCollisionTypes::all(),
+      SpatialBundle::from_transform(Transform::from_xyz(320.0, 320.0, PLAYER_Z_INDEX)),
       ActiveEvents::COLLISION_EVENTS,
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
-      SpriteBundle {
-        sprite: Sprite {
-          color: Color::srgb(0., 0., 0.),
-          custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
-          ..default()
-        },
-        transform: Transform::from_xyz(320., 320., PLAYER_Z_INDEX),
-        ..Default::default()
-      },
       Player::default(),
       GravityScale(0.),
-      Dash(Timer::from_seconds(1., TimerMode::Once)),
+      AnimationIndices { first: 0, last: 11 },
       Idle,
     ))
     .with_children(|parent| {
+      parent.spawn((
+        SpriteBundle {
+          sprite: Sprite {
+            custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
+            ..default()
+          },
+          texture,
+          transform: Transform::from_xyz(-0.5, -0.5, PLAYER_Z_INDEX),
+          ..Default::default()
+        },
+        atlas,
+        animation_timer,
+      ));
       parent.spawn(Camera2dBundle {
         transform: Transform::from_xyz(0., 0., CAMERA_Z_INDEX),
         projection: OrthographicProjection {
@@ -198,5 +217,3 @@ fn tick_dodge_cooldown_timer(mut query: Query<&mut Player>, time: Res<Time>) {
     player.dodge_cooldown.tick(time.delta());
   }
 }
-
-// fn attack(mouse_input: Res<MouseButtonInput)

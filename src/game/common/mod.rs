@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::Velocity;
 
+pub mod animations;
+
 #[derive(Component)]
 pub struct DespawnTimer(pub Timer);
 

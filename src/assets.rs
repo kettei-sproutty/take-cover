@@ -13,6 +13,10 @@ pub struct UiAssets {
   #[allow(unused)]
   pub atlas: Handle<Image>,
   pub planet: Handle<LdtkProject>,
+  pub player_spritesheet: Handle<Image>,
+  pub enemy_red_spritesheet: Handle<Image>,
+  pub enemy_blue_spritesheet: Handle<Image>,
+  pub enemy_green_spritesheet: Handle<Image>,
 }
 
 #[derive(Resource)]
@@ -49,12 +53,23 @@ fn load_ui_assets(
   let font_mono = asset_server.load("fonts/JetBrainsMono.ttf");
   let atlas = asset_server.load("textures/1-bit/colored.png");
   let planet = asset_server.load("levels/walls.ldtk");
+  let player_spritesheet: Handle<Image> = asset_server.load("textures/player/player_norm.png");
+  let enemy_blue_spritesheet: Handle<Image> =
+    asset_server.load("textures/worm/sheet/worm_blue_norm.png");
+  let enemy_red_spritesheet: Handle<Image> =
+    asset_server.load("textures/worm/sheet/worm_red_norm.png");
+  let enemy_green_spritesheet: Handle<Image> =
+    asset_server.load("textures/worm/sheet/worm_green_norm.png");
 
   // Connect the assets to the loading tracker by `iyes_progress`
   loading.add(&font_sans);
   loading.add(&font_mono);
   loading.add(&atlas);
   loading.add(&planet);
+  loading.add(&player_spritesheet);
+  loading.add(&enemy_blue_spritesheet);
+  loading.add(&enemy_green_spritesheet);
+  loading.add(&enemy_red_spritesheet);
 
   // Insert the assets resources into the game
   commands.insert_resource(UiAssets {
@@ -62,6 +77,10 @@ fn load_ui_assets(
     font_mono,
     atlas,
     planet,
+    player_spritesheet,
+    enemy_blue_spritesheet,
+    enemy_green_spritesheet,
+    enemy_red_spritesheet,
   });
 }
 

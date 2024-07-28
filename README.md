@@ -1,20 +1,17 @@
 # Bevy Jam 5
 
-`Bevy Jam 5` project made with [Bevy](https://bevyengine.com), by [Alessio Marchi](https://alessiomarchi.dev) and [Mauro Bellinzona](https://).
+`Bevy Jam 5` project made with [Bevy](https://bevyengine.com), by [Alessio Marchi](https://alessiomarchi.dev) and [Mauro Bellinzona](https://github.com/BackupMiles).
 
 ## Project structure ispiration
 
 - [TheSeeker](https://github.com/TheSeekerGame/TheSeeker)
 - [bevy_quickstart](https://github.com/TheBevyFlock/bevy_quickstart)
 
-## Credits
-
-- [BackupMiles](https://github.com/BackupMiles)
-
 ## Assets
 
 - [Kenney](https://www.kenney.nl) - See LICENSE in [/assets/textures/1-bit/License.txt](/assets/textures/1-bit/License.txt)
-- [sanctumpixel](https://sanctumpixel.itch.io/worm-pixel-art-monster) - Worm assets bought from its [itch.io page](https://sanctumpixel.itch.io/worm-pixel-art-monster), all rights reserved to them
+- [sanctumpixel](https://sanctumpixel.itch.io/) - Worm assets bought from its [itch.io page](https://sanctumpixel.itch.io/worm-pixel-art-monster), all rights reserved to them
+- [penusbmic](https://penusbmic.itch.io/) - Glitch Samurai asset bought from its [itch.io page](https://penusbmic.itch.io/the-dark-series-glitch-samurai)
 
 ## How to play
 

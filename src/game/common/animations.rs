@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use super::Enemy;
-
 #[derive(Component, Clone)]
 pub struct AnimationIndices {
   pub first: usize,
@@ -13,7 +11,7 @@ pub struct AnimationTimer(pub Timer);
 
 pub fn animate_sprite(
   time: Res<Time>,
-  anim_query: Query<Option<&AnimationIndices>, With<Enemy>>,
+  anim_query: Query<Option<&AnimationIndices>>,
   mut query: Query<(&mut AnimationTimer, &mut TextureAtlas, &Parent)>,
 ) {
   for (mut timer, mut atlas, parent) in &mut query {
