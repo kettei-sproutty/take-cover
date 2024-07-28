@@ -4,8 +4,10 @@ use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
+#[cfg(not(target_arch = "wasm32"))]
 use bevy_hanabi::{EffectAsset, ParticleEffect, ParticleEffectBundle};
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
+#[cfg(not(target_arch = "wasm32"))]
 use effects::make_dirt_effect;
 use rand::prelude::*;
 use seldom_state::prelude::*;
@@ -18,6 +20,7 @@ use super::common::{
   tick_despawn_timer, DespawnTimer,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 mod effects;
 mod sprite;
 
@@ -227,7 +230,7 @@ fn spawn_enemy(
   texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
   ui_assets: Res<UiAssets>,
   mut commands: Commands,
-  mut effects: ResMut<Assets<EffectAsset>>,
+  #[cfg(not(target_arch = "wasm32"))] mut effects: ResMut<Assets<EffectAsset>>,
 ) {
   if enemy_query.iter().count() >= BASE_ENEMIES as usize {
     return;
@@ -339,6 +342,7 @@ fn spawn_enemy(
   let (texture, texture_atlas, timer) =
     get_idle_animation(&enemy.variant, ui_assets, texture_atlas_layouts);
 
+  #[cfg(not(target_arch = "wasm32"))]
   let effect = effects.add(make_dirt_effect());
 
   // spawn enemy, define state machine behavior
@@ -373,6 +377,7 @@ fn spawn_enemy(
         texture_atlas,
         timer,
       ));
+      #[cfg(not(target_arch = "wasm32"))]
       parent.spawn(ParticleEffectBundle {
         effect: ParticleEffect::new(effect).with_z_layer_2d(Some(3.0)),
         transform: Transform::from_xyz(0.0, -ENEMY_SPRITE_SIZE * 0.5, 0.0),
