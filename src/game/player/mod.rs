@@ -51,6 +51,7 @@ pub fn init_player(mut commands: Commands) {
         .trans::<Move, _>(has_moved.not(), Idle)
         .set_trans_logging(true),
       Collider::cuboid(8., 8.),
+      ActiveEvents::COLLISION_EVENTS,
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
       SpriteBundle {
