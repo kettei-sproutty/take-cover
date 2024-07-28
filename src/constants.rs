@@ -29,7 +29,7 @@ pub const CYCLE_DURATION: f32 = 5.0;
 pub const CYCLE_WEIGHT: usize = 5;
 #[allow(dead_code)]
 /// The delay between meteor spawns, expressed in seconds.
-pub const METEOR_SPAWN_DELAY: f32 = 0.5;
+pub const METEOR_SPAWN_DELAY: f32 = 0.25;
 
 // z-indexes
 pub const PLAYER_Z_INDEX: f32 = 4.0;

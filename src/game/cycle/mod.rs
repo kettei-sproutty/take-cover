@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use crate::prelude::*;
 use rand::Rng;
 use seldom_state::prelude::*;
@@ -36,11 +34,13 @@ struct FallSpeed(f32);
 
 #[derive(Component)]
 struct Cycle {
-  // TODO: use a timer instead of Instant
-  start: Instant,
+  start: Timer,
   meteors: usize,
   index: usize,
 }
+
+#[derive(Resource)]
+struct MeteorSpawnDelay(Timer);
 
 pub struct CyclePlugin;
 
@@ -71,10 +71,16 @@ impl Plugin for CyclePlugin {
   }
 }
 
-fn check_cycle_state(mut next_state: ResMut<NextState<CycleState>>, cycle: Query<&Cycle>) {
-  let cycle = cycle.get_single().unwrap();
+fn check_cycle_state(
+  mut next_state: ResMut<NextState<CycleState>>,
+  time: Res<Time>,
+  mut cycle: Query<&mut Cycle>,
+) {
+  let mut cycle = cycle.get_single_mut().unwrap();
 
-  if cycle.start.elapsed().as_secs_f32() >= CYCLE_DURATION {
+  cycle.start.tick(time.delta());
+
+  if cycle.start.finished() {
     next_state.set(CycleState::Meteors);
   }
 }
@@ -83,12 +89,16 @@ fn init_cycle(mut commands: Commands, mut next_state: ResMut<NextState<CycleStat
   commands.spawn((
     StateDespawnMarker,
     Cycle {
-      start: Instant::now(),
+      start: Timer::from_seconds(CYCLE_DURATION, TimerMode::Once),
       meteors: CYCLE_WEIGHT,
       index: 1,
     },
   ));
 
+  commands.insert_resource(MeteorSpawnDelay(Timer::from_seconds(
+    rand::thread_rng().gen_range(METEOR_SPAWN_DELAY..METEOR_SPAWN_DELAY + 0.1),
+    TimerMode::Once,
+  )));
   next_state.set(CycleState::Standard);
 }
 
@@ -98,25 +108,26 @@ fn spawn_meteor(
   mut next_state: ResMut<NextState<CycleState>>,
   mut score: ResMut<Score>,
   player_query: Query<&Transform, With<Player>>,
-  #[allow(unused_variables)] time: Res<Time>,
+  mut meteor_spawn_delay: ResMut<MeteorSpawnDelay>,
+  time: Res<Time>,
 ) {
   let mut cycle = query.get_single_mut().unwrap();
+  meteor_spawn_delay.0.tick(time.delta());
+
+  if meteor_spawn_delay.0.finished() {
+    meteor_spawn_delay.0.reset();
+  } else {
+    return;
+  }
 
   // If there are no more meteors to spawn, reset the cycle.
   if cycle.meteors == 0 {
     next_state.set(CycleState::Standard);
-    cycle.start = Instant::now();
+    cycle.start = Timer::from_seconds(CYCLE_DURATION, TimerMode::Once);
     cycle.index += 1;
     cycle.meteors = CYCLE_WEIGHT * cycle.index;
     score.0 += cycle.index * 10;
   };
-
-  // If the delay has not passed, do not spawn a meteor.
-  // TODO: decrease the delay as the cycle index increases
-  // TODO: add a random factor to the delay
-  // if time.elapsed_wrapped() < METEOR_SPAWN_DELAY {
-  //   return;
-  // };
 
   let is_on_ground = |In(entity): In<Entity>, query: Query<&Transform>| {
     let transform = query.get(entity).unwrap();
