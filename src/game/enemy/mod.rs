@@ -20,7 +20,7 @@ mod sprite;
 #[derive(Clone)]
 enum EnemyVariant {
   Aqua,
-  Purple,
+  Red,
   Green,
 }
 
@@ -36,13 +36,11 @@ struct AttackCone;
 
 impl Default for Enemy {
   fn default() -> Self {
-    let variant = thread_rng().gen_range(0..2);
-    let variant = if variant == 0 {
-      EnemyVariant::Aqua
-    } else if variant == 1 {
-      EnemyVariant::Purple
-    } else {
-      EnemyVariant::Green
+    let variant = match thread_rng().gen_range(0..2) {
+      0 => EnemyVariant::Aqua,
+      1 => EnemyVariant::Red,
+      2 => EnemyVariant::Green,
+      _ => EnemyVariant::Red,
     };
 
     Self {
