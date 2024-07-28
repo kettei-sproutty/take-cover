@@ -17,6 +17,10 @@ struct Idle;
 #[component(storage = "SparseSet")]
 struct Move;
 
+#[allow(dead_code)]
+#[derive(Component)]
+struct Dash(Timer);
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -43,13 +47,17 @@ pub fn init_player(mut commands: Commands) {
       false
     };
 
+  let move_state_machine = StateMachine::default()
+    .trans::<Idle, _>(has_moved, Move)
+    .trans::<Move, _>(has_moved.not(), Idle);
+
+  #[cfg(feature = "dev")]
+  let move_state_machine = move_state_machine.set_trans_logging(true);
+
   commands
     .spawn((
       StateDespawnMarker,
-      StateMachine::default()
-        .trans::<Idle, _>(has_moved, Move)
-        .trans::<Move, _>(has_moved.not(), Idle)
-        .set_trans_logging(true),
+      move_state_machine,
       Collider::cuboid(8., 8.),
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
@@ -66,6 +74,7 @@ pub fn init_player(mut commands: Commands) {
         speed: PLAYER_SPEED,
       },
       GravityScale(0.),
+      Dash(Timer::from_seconds(1., TimerMode::Once)),
       Idle,
     ))
     .with_children(|parent| {
@@ -82,9 +91,10 @@ pub fn init_player(mut commands: Commands) {
 
 fn move_player(
   keyboard_input: Res<ButtonInput<KeyCode>>,
-  mut player_info: Query<(&Player, &mut Velocity)>,
+  mut player_info: Query<(&Player, &mut Velocity, &mut Dash)>,
 ) {
-  for (player, mut rb_vels) in &mut player_info {
+  // TODO: Implement dash
+  for (player, mut rb_vels, mut _dash) in &mut player_info {
     let up = keyboard_input.any_pressed([KeyCode::KeyW, KeyCode::ArrowUp]);
     let down = keyboard_input.any_pressed([KeyCode::KeyS, KeyCode::ArrowDown]);
     let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
@@ -98,5 +108,9 @@ fn move_player(
     // Update the velocity on the rigid_body_component,
     // the bevy_rapier plugin will update the Sprite transform.
     rb_vels.linvel = move_delta * player.speed;
+
+    // TODO: Implement dash
   }
 }
+
+// fn attack(mouse_input: Res<MouseButtonInput)
