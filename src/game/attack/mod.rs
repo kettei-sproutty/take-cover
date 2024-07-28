@@ -1,20 +1,35 @@
 use bevy::window::PrimaryWindow;
+use bevy_rapier2d::prelude::*;
 use seldom_state::prelude::StateMachine;
 
 use crate::prelude::*;
 
-#[derive(Clone, Component)]
-#[component(storage = "SparseSet")]
-struct Idle;
+use super::Score;
+
+#[derive(Component)]
+pub struct AttackComponent;
+
+#[derive(Component)]
+pub struct AttackTrailCollider;
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
-struct Attack;
+pub struct Idle;
+
+#[derive(Clone, Component)]
+#[component(storage = "SparseSet")]
+pub struct Attack;
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
 #[allow(dead_code)]
-struct AttackEnd;
+pub struct AttackEnd;
+
+#[derive(Resource)]
+pub struct AttackPositions(Vec<Vec2>);
+
+#[derive(Component)]
+pub struct AttackTrail;
 
 pub struct AttackPlugin;
 
@@ -26,6 +41,18 @@ impl Plugin for AttackPlugin {
       track_mouse_movement
         .run_if(in_state(AppState::InGame))
         .after(init_attack),
+    );
+    app.add_systems(
+      Update,
+      check_attack
+        .run_if(in_state(AppState::InGame))
+        .after(track_mouse_movement),
+    );
+    app.add_systems(
+      Update,
+      check_for_collisions
+        .run_if(in_state(AppState::InGame))
+        .after(check_attack),
     );
   }
 }
@@ -43,17 +70,96 @@ fn init_attack(mut commands: Commands) {
   #[cfg(feature = "dev")]
   let state_machine = state_machine.set_trans_logging(true);
 
-  commands.spawn((StateDespawnMarker, state_machine, Idle));
+  commands.insert_resource(AttackPositions(vec![]));
+
+  commands.spawn((StateDespawnMarker, state_machine, AttackComponent, Idle));
 }
 
 fn track_mouse_movement(
-  // mut commands: Commands,
+  mut commands: Commands,
+  mut mouse_position: ResMut<AttackPositions>,
+  q_camera: Query<(&Camera, &GlobalTransform), With<Camera>>,
   query: Query<Entity, With<Attack>>,
   q_windows: Query<&Window, With<PrimaryWindow>>,
 ) {
   if let Ok(_entity) = query.get_single() {
-    if let Some(position) = q_windows.single().cursor_position() {
-      println!("Mouse position: {:?}", position);
+    let (camera, camera_transform) = q_camera.single();
+
+    if let Some(position) = q_windows
+      .single()
+      .cursor_position()
+      .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+      .map(|ray| ray.origin.truncate())
+    {
+      mouse_position.0.push(position);
+
+      commands.spawn((
+        StateDespawnMarker,
+        AttackTrail,
+        SpriteBundle {
+          sprite: Sprite {
+            color: colors::PRIMARY_200,
+            custom_size: Some(Vec2::new(2., 2.)),
+            ..default()
+          },
+          transform: Transform::from_xyz(position.x, position.y, PLAYER_Z_INDEX),
+          ..Default::default()
+        },
+      ));
+    }
+  }
+}
+
+pub fn check_attack(
+  mut commands: Commands,
+  mut positions: ResMut<AttackPositions>,
+  query: Query<Entity, (With<AttackComponent>, With<Idle>)>,
+  trail_query: Query<Entity, With<AttackTrail>>,
+) {
+  if positions.0.len() < 2 {
+    return;
+  }
+
+  if let Ok(_entity) = query.get_single() {
+    let mut vertices = positions.0.clone();
+    vertices.push(vertices[0]);
+
+    commands.spawn((
+      StateDespawnMarker,
+      AttackTrailCollider,
+      Collider::polyline(vertices, None),
+      CollisionGroups::new(ATTACK_TRAIL_GROUP, ENEMY_GROUP),
+      ActiveCollisionTypes::all(),
+      Sensor,
+      CollidingEntities::default(),
+      ActiveEvents::COLLISION_EVENTS,
+    ));
+
+    for trail_entity in trail_query.iter() {
+      commands.entity(trail_entity).despawn();
+    }
+
+    positions.0.clear();
+  }
+}
+
+fn check_for_collisions(
+  mut commands: Commands,
+  query: Query<(Entity, &CollidingEntities), With<AttackTrailCollider>>,
+  enemies: Query<Entity, With<Enemy>>,
+  mut score: ResMut<Score>,
+) {
+  if query.get_single().is_err() {
+    return;
+  }
+
+  let (collider_entity, colliders) = query.get_single().unwrap();
+  for enemy_entity in &enemies {
+    if colliders.contains(enemy_entity) {
+      println!("Collision detected!");
+      commands.entity(enemy_entity).despawn_recursive();
+      commands.entity(collider_entity).despawn();
+      score.0 += 3;
     }
   }
 }

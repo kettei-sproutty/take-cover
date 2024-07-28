@@ -194,10 +194,8 @@ fn check_impact(
 
     // This doesn't work as expected. + now it seems it does, but to be investigated
     if player_position.distance(meteor_position) < SPRITE_SIZE {
-      println!("Player hit by meteor");
       next_state.set(AppState::GameOver);
     } else {
-      println!("Meteor hit the ground");
       score.0 += 1;
     }
 

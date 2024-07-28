@@ -1,5 +1,6 @@
 use std::{f32::consts::PI, time::Duration};
 
+use crate::game::attack::AttackTrailCollider;
 use animations::{animate_sprite, AnimationIndices};
 use bevy::{
   prelude::*,
@@ -29,7 +30,7 @@ enum EnemyVariant {
 
 // TODO: add damage
 #[derive(Clone, Component)]
-struct Enemy {
+pub struct Enemy {
   attack_range: f32,
   variant: EnemyVariant,
 }
@@ -52,6 +53,9 @@ impl Default for Enemy {
     }
   }
 }
+
+#[derive(Component)]
+struct DyingComponent;
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
@@ -177,6 +181,16 @@ impl Plugin for EnemyPlugin {
     app.add_systems(
       Update,
       (check_for_collisions, tick_despawn_timer).run_if(in_state(AppState::InGame)),
+    );
+
+    app.add_systems(
+      Update,
+      check_for_collisions_with_attack_trail.run_if(in_state(AppState::InGame)),
+    );
+
+    app.add_systems(
+      Update,
+      despawn_died_enemies.run_if(in_state(AppState::InGame)),
     );
   }
 }
@@ -338,7 +352,7 @@ fn spawn_enemy(
       // Despawn enemy on app state change
       StateDespawnMarker,
       Collider::cuboid(ENEMY_SPRITE_SIZE / 4., ENEMY_SPRITE_SIZE / 2.),
-      CollisionGroups::new(ENEMY_GROUP, Group::empty()),
+      CollisionGroups::new(ENEMY_GROUP, ATTACK_TRAIL_GROUP),
       // TODO: use transform and try removing any physics related thingy
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
@@ -490,7 +504,7 @@ fn handle_delivering_event(
           .spawn(Collider::ball(radius))
           .insert(StateDespawnMarker)
           .insert(ActiveEvents::COLLISION_EVENTS)
-          .insert(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC)
+          .insert(ActiveCollisionTypes::all())
           .insert(Sensor)
           .insert(CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP))
           .insert(DespawnTimer(Timer::from_seconds(
@@ -536,5 +550,32 @@ fn check_for_collisions(
         next_state.set(AppState::GameOver);
       }
     }
+  }
+}
+
+#[allow(dead_code)]
+fn check_for_collisions_with_attack_trail(
+  #[allow(unused_variables)] commands: Commands,
+  #[allow(unused_variables)] collision_events: EventReader<CollisionEvent>,
+  #[allow(unused_variables)] enemy_query: Query<Entity, With<Enemy>>,
+  #[allow(unused_variables)] attack_trail_query: Query<Entity, With<AttackTrailCollider>>,
+) {
+  // for collision in collision_events.read() {
+  //   if let CollisionEvent::Started(first_entity, entity, CollisionEventFlags::SENSOR) = collision {
+  //     let p = attack_trail_query.get_single().unwrap();
+  //     if p == *first_entity || p == *entity {
+  //       for enemy_entity in &enemy_query {
+  //         if enemy_entity == *first_entity || enemy_entity == *entity {
+  //           commands.entity(enemy_entity).insert(DyingComponent);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+}
+
+fn despawn_died_enemies(mut commands: Commands, query: Query<Entity, With<DyingComponent>>) {
+  for entity in query.iter() {
+    commands.entity(entity).despawn_recursive();
   }
 }
