@@ -31,6 +31,9 @@ pub struct AttackPositions(Vec<Vec2>);
 #[derive(Component)]
 pub struct AttackTrail;
 
+#[derive(Component)]
+pub struct Cooldown(pub Timer);
+
 pub struct AttackPlugin;
 
 impl Plugin for AttackPlugin {
@@ -131,6 +134,7 @@ pub fn check_attack(
       CollisionGroups::new(ATTACK_TRAIL_GROUP, ENEMY_GROUP),
       ActiveCollisionTypes::all(),
       Sensor,
+      Cooldown(Timer::from_seconds(0.1, TimerMode::Once)),
       CollidingEntities::default(),
       ActiveEvents::COLLISION_EVENTS,
     ));
@@ -145,21 +149,27 @@ pub fn check_attack(
 
 fn check_for_collisions(
   mut commands: Commands,
-  query: Query<(Entity, &CollidingEntities), With<AttackTrailCollider>>,
+  mut query: Query<(Entity, &CollidingEntities, &mut Cooldown), With<AttackTrailCollider>>,
   enemies: Query<Entity, With<Enemy>>,
   mut score: ResMut<Score>,
+  time: Res<Time>,
 ) {
-  if query.get_single().is_err() {
-    return;
-  }
+  for (collider_entity, colliders, mut cooldown) in &mut query {
+    cooldown.0.tick(time.delta());
 
-  let (collider_entity, colliders) = query.get_single().unwrap();
-  for enemy_entity in &enemies {
-    if colliders.contains(enemy_entity) {
-      println!("Collision detected!");
-      commands.entity(enemy_entity).despawn_recursive();
-      commands.entity(collider_entity).despawn();
-      score.0 += 3;
+    for enemy_entity in &enemies {
+      if colliders.contains(enemy_entity) {
+        commands.entity(enemy_entity).despawn_recursive();
+        commands.entity(collider_entity).despawn();
+        score.0 += 3;
+      }
+    }
+
+    if cooldown.0.finished() {
+      // entity could have been despawned
+      if commands.get_entity(collider_entity).is_some() {
+        commands.entity(collider_entity).despawn();
+      }
     }
   }
 }
