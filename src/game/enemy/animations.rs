@@ -22,11 +22,12 @@ pub fn animate_sprite(
     if let Some(animation_indices) = indices {
       timer.0.tick(time.delta());
       if timer.0.just_finished() {
-        atlas.index = if atlas.index == animation_indices.last {
-          animation_indices.first
-        } else {
-          atlas.index + 1
-        };
+        atlas.index =
+          if atlas.index >= animation_indices.last || atlas.index < animation_indices.first {
+            animation_indices.first
+          } else {
+            atlas.index + 1
+          };
       }
     }
   }

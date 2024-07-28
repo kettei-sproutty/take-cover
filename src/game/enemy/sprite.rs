@@ -8,8 +8,8 @@ pub fn get_idle_animation(
   mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) -> (Handle<Image>, TextureAtlas, AnimationTimer) {
   let path = match variant {
-    EnemyVariant::Aqua => "aqua",
-    EnemyVariant::Purple => "purple",
+    EnemyVariant::Aqua => "blue",
+    EnemyVariant::Red => "red",
     EnemyVariant::Green => "green",
   };
   let texture: Handle<Image> =

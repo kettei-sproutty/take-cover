@@ -59,6 +59,9 @@ pub fn init_player(mut commands: Commands) {
       StateDespawnMarker,
       move_state_machine,
       Collider::cuboid(8., 8.),
+      CollisionGroups::new(PLAYER_GROUP, ATTACK_GROUP),
+      (ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC),
+      ActiveEvents::COLLISION_EVENTS,
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
       SpriteBundle {

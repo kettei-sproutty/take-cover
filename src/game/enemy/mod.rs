@@ -1,16 +1,18 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
 use animations::{animate_sprite, AnimationIndices};
 use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use bevy_rapier2d::prelude::*;
+use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 use rand::prelude::*;
 use seldom_state::prelude::*;
 use sprite::get_idle_animation;
 
 use crate::prelude::*;
+
+use super::common::{tick_despawn_timer, DespawnTimer};
 
 mod animations;
 mod sprite;
@@ -18,7 +20,7 @@ mod sprite;
 #[derive(Clone)]
 enum EnemyVariant {
   Aqua,
-  Purple,
+  Red,
   Green,
 }
 
@@ -34,13 +36,11 @@ struct AttackCone;
 
 impl Default for Enemy {
   fn default() -> Self {
-    let variant = thread_rng().gen_range(0..2);
-    let variant = if variant == 0 {
-      EnemyVariant::Aqua
-    } else if variant == 1 {
-      EnemyVariant::Purple
-    } else {
-      EnemyVariant::Green
+    let variant = match thread_rng().gen_range(0..2) {
+      0 => EnemyVariant::Aqua,
+      1 => EnemyVariant::Red,
+      2 => EnemyVariant::Green,
+      _ => EnemyVariant::Red,
     };
 
     Self {
@@ -69,7 +69,7 @@ struct Follow {
 #[component(storage = "SparseSet")]
 struct Charging {
   attack_entity: Option<Entity>,
-  charging_time: f32,
+  timer: Timer,
   range: f32,
 }
 
@@ -77,8 +77,11 @@ impl Default for Charging {
   fn default() -> Self {
     Self {
       attack_entity: None,
-      charging_time: ENEMY_CHARGING_TIME,
       range: ENEMY_CHARGING_RANGE,
+      timer: Timer::new(
+        Duration::from_secs_f32(ENEMY_CHARGING_TIME),
+        TimerMode::Once,
+      ),
     }
   }
 }
@@ -87,20 +90,35 @@ impl Default for Charging {
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
 struct Ready {
-  delay: f32,
+  timer: Timer,
+  radius: f32,
 }
 
 impl Default for Ready {
   fn default() -> Self {
     Self {
-      delay: ENEMY_READY_TIME,
+      timer: Timer::from_seconds(ENEMY_READY_TIME, TimerMode::Once),
+      radius: ENEMY_CHARGING_RANGE,
     }
   }
 }
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
-struct Delivering;
+struct Delivering {
+  timer: Timer,
+}
+
+#[derive(Event)]
+struct DeliveringEvent(Entity, f32);
+
+impl Default for Delivering {
+  fn default() -> Self {
+    Self {
+      timer: Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once),
+    }
+  }
+}
 
 pub struct EnemyPlugin;
 
@@ -129,13 +147,33 @@ impl Plugin for EnemyPlugin {
     );
     app.add_systems(
       Update,
-      charge.run_if(in_state(AppState::InGame)).after(spawn_enemy),
+      (charge, tick_charge_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
     );
     app.add_systems(
       Update,
       orient_towards_player
         .run_if(in_state(AppState::InGame))
         .after(charge),
+    );
+    app.add_systems(
+      Update,
+      (get_ready, tick_ready_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
+    );
+
+    app.add_event::<DeliveringEvent>();
+    app.add_systems(
+      Update,
+      (handle_delivering_event, tick_delivery_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
+    );
+    app.add_systems(
+      Update,
+      (check_for_collisions, tick_despawn_timer).run_if(in_state(AppState::InGame)),
     );
   }
 }
@@ -215,8 +253,22 @@ fn spawn_enemy(
       }
     };
 
-  let is_attack_charged = || false;
-  let has_ready_time_elapsed = || false;
+  let is_attack_charged =
+    move |In(entity): In<Entity>, query: Query<(&Charging, Entity), With<Enemy>>| {
+      let charge = query.get(entity);
+      charge.is_ok_and(|c| c.0.timer.finished())
+    };
+
+  let has_ready_time_elapsed =
+    move |In(entity): In<Entity>, query: Query<(&Ready, Entity), With<Enemy>>| {
+      let ready = query.get(entity);
+      ready.is_ok_and(|r| r.0.timer.finished())
+    };
+  let has_delivered =
+    move |In(entity): In<Entity>, query: Query<(&Delivering, Entity), With<Enemy>>| {
+      let delivered = query.get(entity);
+      delivered.is_ok_and(|d| d.0.timer.finished())
+    };
 
   // base circumference on BASE_ENEMIES
   let angle = rand::thread_rng().gen_range(0.0..360.0) * PI / 180.0;
@@ -237,9 +289,10 @@ fn spawn_enemy(
     .trans::<Idle, _>(in_attack_range, Charging::default())
     .trans::<Follow, _>(in_attack_range, Charging::default())
     .trans::<Charging, _>(is_attack_charged, Ready::default())
-    .trans::<Ready, _>(has_ready_time_elapsed, Delivering)
-    .trans::<Delivering, _>(|| true, Idle)
+    .trans::<Ready, _>(has_ready_time_elapsed, Delivering::default())
+    .trans::<Delivering, _>(has_delivered, Idle)
     .on_enter::<Idle>(|entity| {
+      // TODO: is this removed from children? When bevy removes a component, it does not necessarily remove its link to the parent https://bevy-cheatbook.github.io/fundamentals/hierarchy.html
       entity.insert(AnimationIndices { first: 0, last: 3 });
     })
     .on_enter::<Follow>(|entity| {
@@ -278,7 +331,8 @@ fn spawn_enemy(
     .spawn((
       // Despawn enemy on app state change
       StateDespawnMarker,
-      Collider::cuboid(SPRITE_SIZE / 2., SPRITE_SIZE / 2.),
+      Collider::cuboid(ENEMY_SPRITE_SIZE / 2., ENEMY_SPRITE_SIZE / 2.),
+      CollisionGroups::new(ENEMY_GROUP, Group::empty()),
       // TODO: use transform and try removing any physics related thingy
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
@@ -291,17 +345,14 @@ fn spawn_enemy(
     ))
     .with_children(|parent| {
       parent.spawn((
+        StateDespawnMarker,
         SpriteBundle {
           sprite: Sprite {
             custom_size: Some(Vec2::new(ENEMY_SPRITE_SIZE, ENEMY_SPRITE_SIZE)),
             ..default()
           },
           texture,
-          transform: Transform::from_xyz(
-            ENEMY_SPRITE_SIZE * 0.5,
-            ENEMY_SPRITE_SIZE * 0.5,
-            ENEMY_ATTACK_GIZMO_Z_INDEX,
-          ),
+          transform: Transform::from_xyz(-0.5, 0.5, ENEMY_ATTACK_GIZMO_Z_INDEX),
           ..default()
         },
         texture_atlas,
@@ -326,7 +377,6 @@ fn charge(
   >,
   player_query: Query<&Transform, (With<Player>, Without<Enemy>)>,
 ) {
-  // spawn cone entity
   let player_transform = player_query.get_single().unwrap();
 
   for (mut charging, entity, mut velocity, transform) in &mut query {
@@ -337,22 +387,19 @@ fn charge(
     velocity.linvel = Vec2::ZERO;
 
     let shape = Mesh2dHandle(meshes.add(CircularSector::new(charging.range, 1.0)));
-    let material = materials.add(Color::srgb(0.0, 1.0, 0.0));
+    let material = materials.add(Color::srgba(1.0, 0.0, 0.0, 0.2));
 
     // TODO: angle is not initialized correctly
     let angle =
       (player_transform.translation.truncate() - transform.translation.truncate()).to_angle();
 
+    // spawn cone entity
     let cone = (
+      StateDespawnMarker,
       MaterialMesh2dBundle {
         mesh: shape,
         material,
         transform: Transform {
-          translation: Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: ENEMY_ATTACK_GIZMO_Z_INDEX,
-          },
           rotation: Quat::from_rotation_z(angle),
           ..default()
         },
@@ -376,5 +423,107 @@ fn orient_towards_player(
     let angle =
       (player_transform - global_transform.translation().truncate()).to_angle() - PI / 2.0;
     cone_transform.rotation = Quat::from_rotation_z(angle);
+  }
+}
+
+fn tick_charge_timer(mut query: Query<&mut Charging, With<Enemy>>, time: Res<Time>) {
+  for mut charging_data in query.iter_mut() {
+    charging_data.timer.tick(time.delta());
+  }
+}
+
+fn tick_ready_timer(
+  mut evt_writer: EventWriter<DeliveringEvent>,
+  mut query: Query<(&mut Ready, Entity), With<Enemy>>,
+  time: Res<Time>,
+) {
+  for (mut ready_data, entity) in query.iter_mut() {
+    ready_data.timer.tick(time.delta());
+    if ready_data.timer.just_finished() {
+      evt_writer.send(DeliveringEvent(entity, ready_data.radius));
+    }
+  }
+}
+
+fn tick_delivery_timer(mut query: Query<&mut Delivering, With<Enemy>>, time: Res<Time>) {
+  for mut delivery_data in query.iter_mut() {
+    delivery_data.timer.tick(time.delta());
+  }
+}
+
+fn handle_delivering_event(
+  mut delivering_event: EventReader<DeliveringEvent>,
+  enemy_query: Query<(&Children, Entity), With<Enemy>>,
+  cone_query: Query<&mut Parent, With<AttackCone>>,
+  mut commands: Commands,
+) {
+  for evt in delivering_event.read() {
+    // entity which fired the event
+    let (entity, radius) = (evt.0, evt.1);
+    for (children, enemy_entity) in &enemy_query {
+      if entity != enemy_entity {
+        continue;
+      }
+
+      for child in children {
+        let is_cone = cone_query.get(*child).is_ok();
+        if !is_cone {
+          continue;
+        }
+
+        commands.entity(entity).remove_children(&[*child]);
+        commands.entity(*child).despawn_recursive();
+
+        // add collider for a frame
+        let collider = commands
+          .spawn(Collider::ball(radius))
+          .insert(StateDespawnMarker)
+          .insert(ActiveEvents::COLLISION_EVENTS)
+          .insert(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC)
+          .insert(Sensor)
+          .insert(CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP))
+          .insert(DespawnTimer(Timer::from_seconds(
+            ENEMY_DELIVER_TIME,
+            TimerMode::Once,
+          )))
+          .id();
+        commands.entity(entity).push_children(&[collider]);
+      }
+    }
+  }
+}
+
+fn get_ready(
+  enemies: Query<(&Ready, &Children), With<Enemy>>,
+  material_query: Query<&mut Handle<ColorMaterial>>,
+  mut materials: ResMut<Assets<ColorMaterial>>,
+  time: Res<Time>,
+) {
+  for (_, children) in &enemies {
+    for child in children.iter() {
+      if let Ok(handle) = material_query.get(*child) {
+        let material = materials.get_mut(handle).unwrap();
+        let alpha = (time.elapsed_seconds() * READY_FLICKER_FREQUENCY)
+          .sin()
+          .abs()
+          * READY_FLICKER_WAVELENGTH;
+        material.color = Color::srgba(1.0, 0.0, 0.0, alpha);
+      }
+    }
+  }
+}
+
+fn check_for_collisions(
+  mut collision_events: EventReader<CollisionEvent>,
+  player_query: Query<Entity, With<Player>>,
+  mut next_state: ResMut<NextState<AppState>>,
+) {
+  for collision in collision_events.read() {
+    if let CollisionEvent::Started(first_entity, entity, CollisionEventFlags::SENSOR) = collision {
+      let p = player_query.get_single().unwrap();
+      if p == *first_entity || p == *entity {
+        next_state.set(AppState::GameOver);
+      }
+    }
   }
 }
