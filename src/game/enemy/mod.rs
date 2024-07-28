@@ -352,11 +352,7 @@ fn spawn_enemy(
             ..default()
           },
           texture,
-          transform: Transform::from_xyz(
-            ENEMY_SPRITE_SIZE * 0.5,
-            ENEMY_SPRITE_SIZE * 0.5,
-            ENEMY_ATTACK_GIZMO_Z_INDEX,
-          ),
+          transform: Transform::from_xyz(-0.5, 0.5, ENEMY_ATTACK_GIZMO_Z_INDEX),
           ..default()
         },
         texture_atlas,
