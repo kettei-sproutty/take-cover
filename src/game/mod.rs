@@ -1,7 +1,9 @@
+pub mod attack;
 pub mod cycle;
 pub mod enemy;
 pub mod player;
 
+use attack::AttackPlugin;
 use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
 use cycle::CyclePlugin;
 use enemy::EnemyPlugin;
@@ -28,7 +30,7 @@ impl<S: States> Plugin for GamePlugin<S> {
     app.insert_resource(LevelSelection::index(0));
     app.insert_resource(Score(0));
 
-    app.add_plugins((PlayerPlugin, EnemyPlugin, CyclePlugin));
+    app.add_plugins((PlayerPlugin, EnemyPlugin, CyclePlugin, AttackPlugin));
     app.add_systems(Update, (update_score, update_state));
   }
 }
