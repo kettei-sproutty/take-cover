@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
 use animations::{animate_sprite, AnimationIndices};
 use bevy::{
@@ -69,7 +69,7 @@ struct Follow {
 #[component(storage = "SparseSet")]
 struct Charging {
   attack_entity: Option<Entity>,
-  charging_time: f32,
+  timer: Timer,
   range: f32,
 }
 
@@ -77,8 +77,11 @@ impl Default for Charging {
   fn default() -> Self {
     Self {
       attack_entity: None,
-      charging_time: ENEMY_CHARGING_TIME,
       range: ENEMY_CHARGING_RANGE,
+      timer: Timer::new(
+        Duration::from_secs_f32(ENEMY_CHARGING_TIME),
+        TimerMode::Once,
+      ),
     }
   }
 }
@@ -87,20 +90,30 @@ impl Default for Charging {
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
 struct Ready {
-  delay: f32,
+  timer: Timer,
 }
 
 impl Default for Ready {
   fn default() -> Self {
     Self {
-      delay: ENEMY_READY_TIME,
+      timer: Timer::from_seconds(ENEMY_READY_TIME, TimerMode::Once),
     }
   }
 }
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
-struct Delivering;
+struct Delivering {
+  timer: Timer,
+}
+
+impl Default for Delivering {
+  fn default() -> Self {
+    Self {
+      timer: Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once),
+    }
+  }
+}
 
 pub struct EnemyPlugin;
 
@@ -129,13 +142,27 @@ impl Plugin for EnemyPlugin {
     );
     app.add_systems(
       Update,
-      charge.run_if(in_state(AppState::InGame)).after(spawn_enemy),
+      (charge, tick_charge_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
     );
     app.add_systems(
       Update,
       orient_towards_player
         .run_if(in_state(AppState::InGame))
         .after(charge),
+    );
+    app.add_systems(
+      Update,
+      (get_ready, tick_ready_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
+    );
+    app.add_systems(
+      Update,
+      (deliver, tick_deliver_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
     );
   }
 }
@@ -215,8 +242,22 @@ fn spawn_enemy(
       }
     };
 
-  let is_attack_charged = || false;
-  let has_ready_time_elapsed = || false;
+  let is_attack_charged =
+    move |In(entity): In<Entity>, query: Query<(&Charging, Entity), With<Enemy>>| {
+      let charge = query.get(entity);
+      charge.is_ok_and(|c| c.0.timer.finished())
+    };
+
+  let has_ready_time_elapsed =
+    move |In(entity): In<Entity>, query: Query<(&Ready, Entity), With<Enemy>>| {
+      let ready = query.get(entity);
+      ready.is_ok_and(|r| r.0.timer.finished())
+    };
+  let has_delivered =
+    move |In(entity): In<Entity>, query: Query<(&Delivering, Entity), With<Enemy>>| {
+      let delivered = query.get(entity);
+      delivered.is_ok_and(|d| d.0.timer.finished())
+    };
 
   // base circumference on BASE_ENEMIES
   let angle = rand::thread_rng().gen_range(0.0..360.0) * PI / 180.0;
@@ -237,9 +278,10 @@ fn spawn_enemy(
     .trans::<Idle, _>(in_attack_range, Charging::default())
     .trans::<Follow, _>(in_attack_range, Charging::default())
     .trans::<Charging, _>(is_attack_charged, Ready::default())
-    .trans::<Ready, _>(has_ready_time_elapsed, Delivering)
-    .trans::<Delivering, _>(|| true, Idle)
+    .trans::<Ready, _>(has_ready_time_elapsed, Delivering::default())
+    .trans::<Delivering, _>(has_delivered, Idle)
     .on_enter::<Idle>(|entity| {
+      // TODO: is this removed from children? When bevy removes a component, it does not necessarily remove its link to the parent https://bevy-cheatbook.github.io/fundamentals/hierarchy.html
       entity.insert(AnimationIndices { first: 0, last: 3 });
     })
     .on_enter::<Follow>(|entity| {
@@ -326,7 +368,6 @@ fn charge(
   >,
   player_query: Query<&Transform, (With<Player>, Without<Enemy>)>,
 ) {
-  // spawn cone entity
   let player_transform = player_query.get_single().unwrap();
 
   for (mut charging, entity, mut velocity, transform) in &mut query {
@@ -337,12 +378,13 @@ fn charge(
     velocity.linvel = Vec2::ZERO;
 
     let shape = Mesh2dHandle(meshes.add(CircularSector::new(charging.range, 1.0)));
-    let material = materials.add(Color::srgb(0.0, 1.0, 0.0));
+    let material = materials.add(Color::srgba(1.0, 0.0, 0.0, 0.2));
 
     // TODO: angle is not initialized correctly
     let angle =
       (player_transform.translation.truncate() - transform.translation.truncate()).to_angle();
 
+    // spawn cone entity
     let cone = (
       MaterialMesh2dBundle {
         mesh: shape,
@@ -378,3 +420,45 @@ fn orient_towards_player(
     cone_transform.rotation = Quat::from_rotation_z(angle);
   }
 }
+
+fn tick_charge_timer(mut query: Query<&mut Charging, With<Enemy>>, time: Res<Time>) {
+  for mut charging_data in query.iter_mut() {
+    charging_data.timer.tick(time.delta());
+  }
+}
+
+fn tick_deliver_timer(mut query: Query<&mut Delivering, With<Enemy>>, time: Res<Time>) {
+  for mut delivering_data in query.iter_mut() {
+    delivering_data.timer.tick(time.delta());
+  }
+}
+
+fn tick_ready_timer(mut query: Query<&mut Ready, With<Enemy>>, time: Res<Time>) {
+  for mut ready_data in query.iter_mut() {
+    ready_data.timer.tick(time.delta());
+  }
+}
+
+fn get_ready(
+  enemies: Query<(&Ready, &Children), With<Enemy>>,
+  material_query: Query<&mut Handle<ColorMaterial>>,
+  mut materials: ResMut<Assets<ColorMaterial>>,
+  time: Res<Time>,
+) {
+  for (_, children) in &enemies {
+    for child in children.iter() {
+      if let Ok(handle) = material_query.get(*child) {
+        let material = materials.get_mut(handle).unwrap();
+        let alpha = (time.elapsed_seconds() * READY_FLICKER_FREQUENCY)
+          .sin()
+          .abs()
+          * READY_FLICKER_WAVELENGTH;
+        println!("{:?}", alpha);
+        material.color = Color::srgba(1.0, 0.0, 0.0, alpha);
+      }
+    }
+  }
+}
+
+// instantiate collider
+fn deliver() {}
