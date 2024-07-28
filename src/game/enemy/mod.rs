@@ -1,6 +1,5 @@
 use std::{f32::consts::PI, time::Duration};
 
-use crate::game::attack::AttackTrailCollider;
 use animations::{animate_sprite, AnimationIndices};
 use bevy::{
   prelude::*,
@@ -55,7 +54,7 @@ impl Default for Enemy {
 }
 
 #[derive(Component)]
-struct DyingComponent;
+pub struct DyingComponent;
 
 #[derive(Clone, Component)]
 #[component(storage = "SparseSet")]
@@ -181,11 +180,6 @@ impl Plugin for EnemyPlugin {
     app.add_systems(
       Update,
       (check_for_collisions, tick_despawn_timer).run_if(in_state(AppState::InGame)),
-    );
-
-    app.add_systems(
-      Update,
-      check_for_collisions_with_attack_trail.run_if(in_state(AppState::InGame)),
     );
 
     app.add_systems(
@@ -551,27 +545,6 @@ fn check_for_collisions(
       }
     }
   }
-}
-
-#[allow(dead_code)]
-fn check_for_collisions_with_attack_trail(
-  #[allow(unused_variables)] commands: Commands,
-  #[allow(unused_variables)] collision_events: EventReader<CollisionEvent>,
-  #[allow(unused_variables)] enemy_query: Query<Entity, With<Enemy>>,
-  #[allow(unused_variables)] attack_trail_query: Query<Entity, With<AttackTrailCollider>>,
-) {
-  // for collision in collision_events.read() {
-  //   if let CollisionEvent::Started(first_entity, entity, CollisionEventFlags::SENSOR) = collision {
-  //     let p = attack_trail_query.get_single().unwrap();
-  //     if p == *first_entity || p == *entity {
-  //       for enemy_entity in &enemy_query {
-  //         if enemy_entity == *first_entity || enemy_entity == *entity {
-  //           commands.entity(enemy_entity).insert(DyingComponent);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
 }
 
 fn despawn_died_enemies(mut commands: Commands, query: Query<Entity, With<DyingComponent>>) {

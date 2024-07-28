@@ -112,6 +112,7 @@ fn spawn_meteor(
   mut meteor_spawn_delay: ResMut<MeteorSpawnDelay>,
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<ColorMaterial>>,
+  meteors_query: Query<Entity, With<Meteor>>,
   time: Res<Time>,
 ) {
   let mut cycle = query.get_single_mut().unwrap();
@@ -123,8 +124,12 @@ fn spawn_meteor(
     return;
   }
 
+  if cycle.meteors == 0 && meteors_query.iter().len() != 0 {
+    return;
+  };
+
   // If there are no more meteors to spawn, reset the cycle.
-  if cycle.meteors == 0 {
+  if cycle.meteors == 0 && meteors_query.iter().len() == 0 {
     next_state.set(CycleState::Standard);
     cycle.start = Timer::from_seconds(CYCLE_DURATION, TimerMode::Once);
     cycle.index += 1;

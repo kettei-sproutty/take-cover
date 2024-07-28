@@ -1,8 +1,7 @@
+use crate::{game::enemy::DyingComponent, prelude::*};
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::*;
 use seldom_state::prelude::StateMachine;
-
-use crate::prelude::*;
 
 use super::Score;
 
@@ -159,7 +158,7 @@ fn check_for_collisions(
 
     for enemy_entity in &enemies {
       if colliders.contains(enemy_entity) {
-        commands.entity(enemy_entity).despawn_recursive();
+        commands.entity(enemy_entity).insert(DyingComponent);
         commands.entity(collider_entity).despawn();
         score.0 += 3;
       }
