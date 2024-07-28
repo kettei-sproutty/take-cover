@@ -5,7 +5,9 @@ use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
+use bevy_hanabi::{EffectAsset, ParticleEffect, ParticleEffectBundle};
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
+use effects::make_dirt_effect;
 use rand::prelude::*;
 use seldom_state::prelude::*;
 use sprite::get_idle_animation;
@@ -15,6 +17,7 @@ use crate::prelude::*;
 use super::common::{tick_despawn_timer, DespawnTimer};
 
 mod animations;
+mod effects;
 mod sprite;
 
 #[derive(Clone)]
@@ -211,6 +214,7 @@ fn follow(
 
 fn spawn_enemy(
   mut commands: Commands,
+  mut effects: ResMut<Assets<EffectAsset>>,
   enemy_query: Query<&Enemy>,
   player_query: Query<(&Transform, Entity), With<Player>>,
   asset_server: Res<AssetServer>,
@@ -234,7 +238,7 @@ fn spawn_enemy(
     );
 
     // TODO: move to Enemy struct
-    match distance <= 200. {
+    match distance <= 2000. {
       true => Ok(true),
       false => Err(false),
     }
@@ -326,12 +330,14 @@ fn spawn_enemy(
   let (texture, texture_atlas, timer) =
     get_idle_animation(&enemy.variant, asset_server, texture_atlas_layouts);
 
+  let effect = effects.add(make_dirt_effect());
+
   // spawn enemy, define state machine behavior
   commands
     .spawn((
       // Despawn enemy on app state change
       StateDespawnMarker,
-      Collider::cuboid(ENEMY_SPRITE_SIZE / 2., ENEMY_SPRITE_SIZE / 2.),
+      Collider::cuboid(ENEMY_SPRITE_SIZE / 4., ENEMY_SPRITE_SIZE / 2.),
       CollisionGroups::new(ENEMY_GROUP, Group::empty()),
       // TODO: use transform and try removing any physics related thingy
       RigidBody::KinematicVelocityBased,
@@ -358,6 +364,11 @@ fn spawn_enemy(
         texture_atlas,
         timer,
       ));
+      parent.spawn(ParticleEffectBundle {
+        effect: ParticleEffect::new(effect).with_z_layer_2d(Some(3.0)),
+        transform: Transform::from_xyz(0.0, -ENEMY_SPRITE_SIZE * 0.5, 0.0),
+        ..default()
+      });
     });
 }
 
