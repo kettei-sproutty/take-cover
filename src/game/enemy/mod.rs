@@ -107,6 +107,9 @@ struct Delivering {
   timer: Timer,
 }
 
+#[derive(Event)]
+struct DeliveringEvent(Entity);
+
 impl Default for Delivering {
   fn default() -> Self {
     Self {
@@ -161,6 +164,14 @@ impl Plugin for EnemyPlugin {
     app.add_systems(
       Update,
       (deliver, tick_deliver_timer)
+        .run_if(in_state(AppState::InGame))
+        .after(spawn_enemy),
+    );
+
+    app.add_event::<DeliveringEvent>();
+    app.add_systems(
+      Update,
+      handle_delivering_event
         .run_if(in_state(AppState::InGame))
         .after(spawn_enemy),
     );
@@ -427,15 +438,49 @@ fn tick_charge_timer(mut query: Query<&mut Charging, With<Enemy>>, time: Res<Tim
   }
 }
 
-fn tick_deliver_timer(mut query: Query<&mut Delivering, With<Enemy>>, time: Res<Time>) {
-  for mut delivering_data in query.iter_mut() {
+fn tick_deliver_timer(
+  mut query: Query<(&mut Delivering, Entity), With<Enemy>>,
+  time: Res<Time>,
+  mut ev_writer: EventWriter<DeliveringEvent>,
+) {
+  for (mut delivering_data, entity) in query.iter_mut() {
     delivering_data.timer.tick(time.delta());
+    if delivering_data.timer.just_finished() {
+      ev_writer.send(DeliveringEvent(entity));
+    }
   }
 }
 
 fn tick_ready_timer(mut query: Query<&mut Ready, With<Enemy>>, time: Res<Time>) {
   for mut ready_data in query.iter_mut() {
     ready_data.timer.tick(time.delta());
+  }
+}
+
+fn handle_delivering_event(
+  mut delivering_event: EventReader<DeliveringEvent>,
+  enemy_query: Query<(&Children, Entity), With<Enemy>>,
+  cone_query: Query<&mut Parent, With<AttackCone>>,
+  mut commands: Commands,
+) {
+  for evt in delivering_event.read() {
+    // entity which fired the event
+    let entity = evt.0;
+    for (children, enemy_entity) in &enemy_query {
+      if entity != enemy_entity {
+        continue;
+      }
+
+      for child in children {
+        let is_cone = cone_query.get(*child).is_ok();
+        if !is_cone {
+          continue;
+        }
+
+        commands.entity(entity).remove_children(&[*child]);
+        commands.entity(*child).despawn();
+      }
+    }
   }
 }
 
@@ -453,7 +498,6 @@ fn get_ready(
           .sin()
           .abs()
           * READY_FLICKER_WAVELENGTH;
-        println!("{:?}", alpha);
         material.color = Color::srgba(1.0, 0.0, 0.0, alpha);
       }
     }
