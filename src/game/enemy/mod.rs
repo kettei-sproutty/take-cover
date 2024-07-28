@@ -337,7 +337,7 @@ fn spawn_enemy(
     .spawn((
       // Despawn enemy on app state change
       StateDespawnMarker,
-      Collider::cuboid(ENEMY_SPRITE_SIZE / 2., ENEMY_SPRITE_SIZE / 2.),
+      Collider::cuboid(ENEMY_SPRITE_SIZE / 4., ENEMY_SPRITE_SIZE / 2.),
       CollisionGroups::new(ENEMY_GROUP, Group::empty()),
       // TODO: use transform and try removing any physics related thingy
       RigidBody::KinematicVelocityBased,
