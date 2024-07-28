@@ -49,3 +49,4 @@ pub const ENEMY_ATTACK_GIZMO_Z_INDEX: f32 = 2.0;
 pub const ATTACK_GROUP: Group = Group::GROUP_1;
 pub const ENEMY_GROUP: Group = Group::GROUP_2;
 pub const PLAYER_GROUP: Group = Group::GROUP_3;
+pub const ATTACK_TRAIL_GROUP: Group = Group::GROUP_4;

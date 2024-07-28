@@ -50,6 +50,10 @@ impl Default for Dodge {
 #[component(storage = "SparseSet")]
 struct Move;
 
+#[allow(dead_code)]
+#[derive(Component)]
+struct Dash(Timer);
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -128,6 +132,7 @@ pub fn init_player(mut commands: Commands) {
       },
       Player::default(),
       GravityScale(0.),
+      Dash(Timer::from_seconds(1., TimerMode::Once)),
       Idle,
     ))
     .with_children(|parent| {
@@ -193,3 +198,5 @@ fn tick_dodge_cooldown_timer(mut query: Query<&mut Player>, time: Res<Time>) {
     player.dodge_cooldown.tick(time.delta());
   }
 }
+
+// fn attack(mouse_input: Res<MouseButtonInput)
