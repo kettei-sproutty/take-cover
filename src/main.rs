@@ -1,5 +1,6 @@
 use assets::AssetsLoadingPlugin;
 use bevy_ecs_ldtk::prelude::*;
+use bevy_hanabi::HanabiPlugin;
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use game::GamePlugin;
 use iyes_progress::prelude::*;
@@ -64,6 +65,9 @@ fn main() -> AppExit {
   app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
     SPRITE_SIZE,
   ));
+
+  // Particle effects
+  app.add_plugins(HanabiPlugin);
 
   // We use [`iyes_progress`](https://github.com/IyesGames/iyes_progress) to track when we are done loading assets and transition to the main menu
   app.add_plugins(
