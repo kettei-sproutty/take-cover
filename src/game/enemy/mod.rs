@@ -5,7 +5,7 @@ use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use bevy_rapier2d::prelude::*;
+use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 use rand::prelude::*;
 use seldom_state::prelude::*;
 use sprite::get_idle_animation;
@@ -105,15 +105,17 @@ impl Default for Ready {
 #[component(storage = "SparseSet")]
 struct Delivering {
   timer: Timer,
+  radius: f32,
 }
 
 #[derive(Event)]
-struct DeliveringEvent(Entity);
+struct DeliveringEvent(Entity, f32);
 
 impl Default for Delivering {
   fn default() -> Self {
     Self {
       timer: Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once),
+      radius: ENEMY_CHARGING_RANGE,
     }
   }
 }
@@ -163,7 +165,7 @@ impl Plugin for EnemyPlugin {
     );
     app.add_systems(
       Update,
-      (deliver, tick_deliver_timer)
+      (deliver, tick_delivery_timer)
         .run_if(in_state(AppState::InGame))
         .after(spawn_enemy),
     );
@@ -174,6 +176,10 @@ impl Plugin for EnemyPlugin {
       handle_delivering_event
         .run_if(in_state(AppState::InGame))
         .after(spawn_enemy),
+    );
+    app.add_systems(
+      Update,
+      check_for_collisions.run_if(in_state(AppState::InGame)),
     );
   }
 }
@@ -331,7 +337,7 @@ fn spawn_enemy(
     .spawn((
       // Despawn enemy on app state change
       StateDespawnMarker,
-      Collider::cuboid(SPRITE_SIZE / 2., SPRITE_SIZE / 2.),
+      Collider::cuboid(ENEMY_SPRITE_SIZE / 2., ENEMY_SPRITE_SIZE / 2.),
       // TODO: use transform and try removing any physics related thingy
       RigidBody::KinematicVelocityBased,
       Velocity::zero(),
@@ -401,11 +407,6 @@ fn charge(
         mesh: shape,
         material,
         transform: Transform {
-          translation: Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: ENEMY_ATTACK_GIZMO_Z_INDEX,
-          },
           rotation: Quat::from_rotation_z(angle),
           ..default()
         },
@@ -438,7 +439,7 @@ fn tick_charge_timer(mut query: Query<&mut Charging, With<Enemy>>, time: Res<Tim
   }
 }
 
-fn tick_deliver_timer(
+fn tick_delivery_timer(
   mut query: Query<(&mut Delivering, Entity), With<Enemy>>,
   time: Res<Time>,
   mut ev_writer: EventWriter<DeliveringEvent>,
@@ -446,7 +447,7 @@ fn tick_deliver_timer(
   for (mut delivering_data, entity) in query.iter_mut() {
     delivering_data.timer.tick(time.delta());
     if delivering_data.timer.just_finished() {
-      ev_writer.send(DeliveringEvent(entity));
+      ev_writer.send(DeliveringEvent(entity, delivering_data.radius));
     }
   }
 }
@@ -465,7 +466,7 @@ fn handle_delivering_event(
 ) {
   for evt in delivering_event.read() {
     // entity which fired the event
-    let entity = evt.0;
+    let (entity, radius) = (evt.0, evt.1);
     for (children, enemy_entity) in &enemy_query {
       if entity != enemy_entity {
         continue;
@@ -479,6 +480,15 @@ fn handle_delivering_event(
 
         commands.entity(entity).remove_children(&[*child]);
         commands.entity(*child).despawn();
+
+        // add collider for a frame
+        let collider = commands
+          .spawn(Collider::ball(radius))
+          .insert(ActiveEvents::COLLISION_EVENTS)
+          .insert(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_KINEMATIC)
+          .insert(Sensor)
+          .id();
+        commands.entity(entity).push_children(&[collider]);
       }
     }
   }
@@ -506,3 +516,18 @@ fn get_ready(
 
 // instantiate collider
 fn deliver() {}
+
+fn check_for_collisions(
+  mut collision_events: EventReader<CollisionEvent>,
+  player_query: Query<Entity, With<Player>>,
+) {
+  for collision in collision_events.read() {
+    println!("collision event");
+    if let CollisionEvent::Started(first_entity, entity, CollisionEventFlags::SENSOR) = collision {
+      let p = player_query.get_single().unwrap();
+      if p == *first_entity || p == *entity {
+        println!("Player was hit");
+      }
+    }
+  }
+}
