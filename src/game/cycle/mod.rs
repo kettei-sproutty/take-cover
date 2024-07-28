@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 use rand::Rng;
 use seldom_state::prelude::*;
 
@@ -109,6 +110,9 @@ fn spawn_meteor(
   mut score: ResMut<Score>,
   player_query: Query<&Transform, With<Player>>,
   mut meteor_spawn_delay: ResMut<MeteorSpawnDelay>,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<ColorMaterial>>,
+  meteors_query: Query<Entity, With<Meteor>>,
   time: Res<Time>,
 ) {
   let mut cycle = query.get_single_mut().unwrap();
@@ -120,8 +124,12 @@ fn spawn_meteor(
     return;
   }
 
+  if cycle.meteors == 0 && meteors_query.iter().len() != 0 {
+    return;
+  };
+
   // If there are no more meteors to spawn, reset the cycle.
-  if cycle.meteors == 0 {
+  if cycle.meteors == 0 && meteors_query.iter().len() == 0 {
     next_state.set(CycleState::Standard);
     cycle.start = Timer::from_seconds(CYCLE_DURATION, TimerMode::Once);
     cycle.index += 1;
@@ -146,19 +154,16 @@ fn spawn_meteor(
     let angle = rand::random::<f32>() * std::f32::consts::PI * 2.0;
     let x = player_position.x + angle.cos() * distance;
     let y = player_position.y + angle.sin() * distance;
-    Transform::from_xyz(x, y, 10.)
+    Transform::from_xyz(x, y, 25.)
   };
 
   commands.spawn((
     StateDespawnMarker,
     Meteor,
     state_machine,
-    SpriteBundle {
-      sprite: Sprite {
-        color: Color::srgb(0.0, 0.0, 1.0),
-        custom_size: Some(Vec2::new(SPRITE_SIZE, SPRITE_SIZE)),
-        ..default()
-      },
+    MaterialMesh2dBundle {
+      mesh: meshes.add(Circle::new(SPRITE_SIZE / 2.)).into(),
+      material: materials.add(colors::PRIMARY_100),
       transform: meteor_transform,
       ..default()
     },
@@ -175,9 +180,8 @@ fn falling_meteor(
 ) {
   for (mut transform, fall_speed) in &mut meteor_query {
     transform.translation.z -= fall_speed.0;
-    println!("Meteor z: {}", transform.translation.z);
     // TODO: change scale based on z
-    // transform.scale = Vec3::splat(1.0 - transform.translation.z / 10.0);
+    transform.scale = Vec3::splat(1.0 - transform.translation.z / 25.);
   }
 }
 
@@ -185,6 +189,7 @@ fn check_impact(
   mut commands: Commands,
   impact_query: Query<(Entity, &Transform), With<Impact>>,
   player_query: Query<&Transform, With<Player>>,
+  mut score: ResMut<Score>,
   mut next_state: ResMut<NextState<AppState>>,
 ) {
   for (entity, transform) in &mut impact_query.iter() {
@@ -192,10 +197,11 @@ fn check_impact(
     let player_position = player_transform.translation.truncate();
     let meteor_position = transform.translation.truncate();
 
-    // This doesn't work as expected.
+    // This doesn't work as expected. + now it seems it does, but to be investigated
     if player_position.distance(meteor_position) < SPRITE_SIZE {
-      println!("Player hit by meteor");
       next_state.set(AppState::GameOver);
+    } else {
+      score.0 += 1;
     }
 
     commands.entity(entity).despawn();

@@ -217,3 +217,5 @@ fn tick_dodge_cooldown_timer(mut query: Query<&mut Player>, time: Res<Time>) {
     player.dodge_cooldown.tick(time.delta());
   }
 }
+
+// fn attack(mouse_input: Res<MouseButtonInput)
