@@ -131,9 +131,92 @@ fn setup_main_menu(mut commands: Commands, ui: Res<UiAssets>, main_menu_ui: Res<
     ))
     .id();
 
+  // Actions Legend Layout
+  let legend_grid = commands
+    .spawn(NodeBundle {
+      style: Style {
+        position_type: PositionType::Absolute,
+        left: Val::Px(16.),
+        bottom: Val::Px(32.),
+        display: Display::Grid,
+        column_gap: Val::Px(24.),
+        row_gap: Val::Px(16.),
+        align_items: AlignItems::Center,
+        justify_items: JustifyItems::Start,
+        grid_template_columns: vec![GridTrack::min_content(), GridTrack::flex(1.)],
+        grid_template_rows: RepeatedGridTrack::flex(3, 1.),
+        ..Default::default()
+      },
+      ..Default::default()
+    })
+    .with_children(|parent| {
+      // Dodge
+      parent.spawn(ImageBundle {
+        image: main_menu_ui.shift_icon.clone().into(),
+        style: Style {
+          width: Val::Px(46.),
+          height: Val::Px(20.),
+          justify_self: JustifySelf::Center,
+          ..Default::default()
+        },
+        ..Default::default()
+      });
+
+      parent.spawn(TextBundle::from_section(
+        "Dodge",
+        TextStyle {
+          font: ui.font_sans.clone(),
+          color: colors::PRIMARY_300,
+          ..Default::default()
+        },
+      ));
+
+      // Attack
+      parent.spawn(ImageBundle {
+        image: main_menu_ui.click_icon.clone().into(),
+        style: Style {
+          width: Val::Px(28.),
+          height: Val::Px(44.),
+          justify_self: JustifySelf::Center,
+          ..Default::default()
+        },
+        ..Default::default()
+      });
+
+      parent.spawn(TextBundle::from_section(
+        "Draw shape to attack!",
+        TextStyle {
+          font: ui.font_sans.clone(),
+          color: colors::PRIMARY_300,
+          ..Default::default()
+        },
+      ));
+
+      // Move
+      parent.spawn(ImageBundle {
+        image: main_menu_ui.wasd_icon.clone().into(),
+        style: Style {
+          justify_self: JustifySelf::Center,
+          width: Val::Px(72.),
+          ..Default::default()
+        },
+        ..Default::default()
+      });
+
+      parent.spawn(TextBundle::from_section(
+        "Move player",
+        TextStyle {
+          font: ui.font_sans.clone(),
+          color: colors::PRIMARY_300,
+          ..Default::default()
+        },
+      ));
+    })
+    .id();
+
   commands
     .entity(container)
-    .push_children(&[play_button, volume_icon]);
+    .push_children(&[play_button, volume_icon, legend_grid]);
 }
 
 fn play_main_menu_audio(mut commands: Commands, audio: Res<MainMenuAssets>) {
