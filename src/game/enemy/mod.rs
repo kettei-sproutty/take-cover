@@ -4,11 +4,9 @@ use bevy::{
   prelude::*,
   sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-#[cfg(not(target_arch = "wasm32"))]
-use bevy_hanabi::{EffectAsset, ParticleEffect, ParticleEffectBundle};
+use bevy_particle_systems::Playing;
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
-#[cfg(not(target_arch = "wasm32"))]
-use effects::make_dirt_effect;
+use effects::{make_attack_effect, make_dead_enemy_effect, make_dirt_effect};
 use rand::prelude::*;
 use seldom_state::prelude::*;
 use sprite::get_idle_animation;
@@ -230,7 +228,6 @@ fn spawn_enemy(
   texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
   ui_assets: Res<UiAssets>,
   mut commands: Commands,
-  #[cfg(not(target_arch = "wasm32"))] mut effects: ResMut<Assets<EffectAsset>>,
 ) {
   if enemy_query.iter().count() >= BASE_ENEMIES as usize {
     return;
@@ -296,7 +293,7 @@ fn spawn_enemy(
       near_player,
       Follow {
         target: player_entity,
-        speed: rand::thread_rng().gen_range(16.0..24.0),
+        speed: rand::thread_rng().gen_range(20.0..40.0),
         angle,
         player_radius: radius,
       },
@@ -339,11 +336,9 @@ fn spawn_enemy(
   let enemy_y = player_initial_transform.translation.y + angle.sin() * distance;
 
   let enemy = Enemy::default();
+  let effect = make_dirt_effect(ui_assets.enemy_dirt_sprite.clone());
   let (texture, texture_atlas, timer) =
     get_idle_animation(&enemy.variant, ui_assets, texture_atlas_layouts);
-
-  #[cfg(not(target_arch = "wasm32"))]
-  let effect = effects.add(make_dirt_effect());
 
   // spawn enemy, define state machine behavior
   commands
@@ -377,12 +372,7 @@ fn spawn_enemy(
         texture_atlas,
         timer,
       ));
-      #[cfg(not(target_arch = "wasm32"))]
-      parent.spawn(ParticleEffectBundle {
-        effect: ParticleEffect::new(effect).with_z_layer_2d(Some(3.0)),
-        transform: Transform::from_xyz(0.0, -ENEMY_SPRITE_SIZE * 0.5, 0.0),
-        ..default()
-      });
+      parent.spawn((effect, Playing, StateDespawnMarker));
     });
 }
 
@@ -477,9 +467,10 @@ fn tick_delivery_timer(mut query: Query<&mut Delivering, With<Enemy>>, time: Res
 }
 
 fn handle_delivering_event(
-  mut delivering_event: EventReader<DeliveringEvent>,
   enemy_query: Query<(&Children, Entity), With<Enemy>>,
   cone_query: Query<&mut Parent, With<AttackCone>>,
+  assets: Res<UiAssets>,
+  mut delivering_event: EventReader<DeliveringEvent>,
   mut commands: Commands,
 ) {
   for evt in delivering_event.read() {
@@ -499,18 +490,19 @@ fn handle_delivering_event(
         commands.entity(entity).remove_children(&[*child]);
         commands.entity(*child).despawn_recursive();
 
+        let rocks = make_attack_effect(assets.enemy_dirt_sprite.clone());
         // add collider for a frame
         let collider = commands
-          .spawn(Collider::ball(radius))
-          .insert(StateDespawnMarker)
-          .insert(ActiveEvents::COLLISION_EVENTS)
-          .insert(ActiveCollisionTypes::all())
-          .insert(Sensor)
-          .insert(CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP))
-          .insert(DespawnTimer(Timer::from_seconds(
-            ENEMY_DELIVER_TIME,
-            TimerMode::Once,
-          )))
+          .spawn((
+            Collider::ball(radius),
+            StateDespawnMarker,
+            ActiveEvents::COLLISION_EVENTS,
+            ActiveCollisionTypes::all(),
+            Sensor,
+            CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP),
+            DespawnTimer(Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once)),
+            (rocks, Playing),
+          ))
           .id();
         commands.entity(entity).push_children(&[collider]);
       }
@@ -553,8 +545,30 @@ fn check_for_collisions(
   }
 }
 
-fn despawn_died_enemies(mut commands: Commands, query: Query<Entity, With<DyingComponent>>) {
-  for entity in query.iter() {
-    commands.entity(entity).despawn_recursive();
+fn despawn_died_enemies(
+  mut commands: Commands,
+  query: Query<(Entity, &GlobalTransform, &Enemy), With<DyingComponent>>,
+  assets: Res<UiAssets>,
+) {
+  for (entity, transform, enemy) in query.iter() {
+    commands.entity(entity).clear_children();
+    commands.entity(entity).clear();
+    commands.entity(entity).insert((
+      DespawnTimer(Timer::from_seconds(1.0, TimerMode::Once)),
+      StateDespawnMarker,
+      SpatialBundle::from_transform(Transform::from_xyz(
+        transform.translation().x,
+        transform.translation().y,
+        transform.translation().z,
+      )),
+    ));
+    let handle = match enemy.variant {
+      EnemyVariant::Aqua => assets.dead_enemy_sprite.clone(),
+      EnemyVariant::Green => assets.dead_enemy_green_sprite.clone(),
+      EnemyVariant::Red => assets.dead_enemy_red_sprite.clone(),
+    };
+    commands.entity(entity).with_children(|parent| {
+      parent.spawn((make_dead_enemy_effect(handle), Playing, StateDespawnMarker));
+    });
   }
 }

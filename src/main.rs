@@ -1,7 +1,6 @@
 use assets::AssetsLoadingPlugin;
 use bevy_ecs_ldtk::prelude::*;
-#[cfg(not(target_arch = "wasm32"))]
-use bevy_hanabi::HanabiPlugin;
+use bevy_particle_systems::ParticleSystemPlugin;
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use game::GamePlugin;
 use iyes_progress::prelude::*;
@@ -68,8 +67,7 @@ fn main() -> AppExit {
   ));
 
   // Particle effects
-  #[cfg(not(target_arch = "wasm32"))]
-  app.add_plugins(HanabiPlugin);
+  app.add_plugins(ParticleSystemPlugin);
 
   // We use [`iyes_progress`](https://github.com/IyesGames/iyes_progress) to track when we are done loading assets and transition to the main menu
   app.add_plugins(
