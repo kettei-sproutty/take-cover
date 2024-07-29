@@ -15,6 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: Leafwing-Studios/cargo-cache@v2
       - run: command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli
       - run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
