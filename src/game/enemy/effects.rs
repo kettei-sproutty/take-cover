@@ -54,14 +54,14 @@ pub fn make_attack_effect(dirt_sprite: Handle<Image>) -> ParticleSystemBundle {
 pub fn make_dead_enemy_effect(dead_sprite: Handle<Image>) -> ParticleSystemBundle {
   ParticleSystemBundle {
     particle_system: ParticleSystem {
-      color: ColorOverTime::Constant(Color::srgba(1.0, 1.0, 1.0, 1.0)),
+      color: ColorOverTime::Constant(Color::WHITE),
       texture: ParticleTexture::Sprite(dead_sprite),
       bursts: vec![ParticleBurst {
         count: 5,
         time: 0.0,
       }],
-      spawn_rate_per_second: 5.0.into(),
-      initial_speed: JitteredValue::jittered(70.0, -20.0..10.0),
+      spawn_rate_per_second: 0.0.into(),
+      initial_speed: JitteredValue::jittered(50.0, -30.0..30.0),
       rotate_to_movement_direction: true,
       lifetime: JitteredValue::jittered(2.0, -0.5..0.5),
       looping: false,

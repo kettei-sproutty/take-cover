@@ -493,17 +493,16 @@ fn handle_delivering_event(
         let rocks = make_attack_effect(assets.enemy_dirt_sprite.clone());
         // add collider for a frame
         let collider = commands
-          .spawn(Collider::ball(radius))
-          .insert(StateDespawnMarker)
-          .insert(ActiveEvents::COLLISION_EVENTS)
-          .insert(ActiveCollisionTypes::all())
-          .insert(Sensor)
-          .insert(CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP))
-          .insert(DespawnTimer(Timer::from_seconds(
-            ENEMY_DELIVER_TIME,
-            TimerMode::Once,
-          )))
-          .insert((rocks, Playing))
+          .spawn((
+            Collider::ball(radius),
+            StateDespawnMarker,
+            ActiveEvents::COLLISION_EVENTS,
+            ActiveCollisionTypes::all(),
+            Sensor,
+            CollisionGroups::new(ATTACK_GROUP, PLAYER_GROUP),
+            DespawnTimer(Timer::from_seconds(ENEMY_DELIVER_TIME, TimerMode::Once)),
+            (rocks, Playing),
+          ))
           .id();
         commands.entity(entity).push_children(&[collider]);
       }
@@ -548,10 +547,10 @@ fn check_for_collisions(
 
 fn despawn_died_enemies(
   mut commands: Commands,
-  query: Query<(Entity, &GlobalTransform), With<DyingComponent>>,
+  query: Query<(Entity, &GlobalTransform, &Enemy), With<DyingComponent>>,
   assets: Res<UiAssets>,
 ) {
-  for (entity, transform) in query.iter() {
+  for (entity, transform, enemy) in query.iter() {
     commands.entity(entity).clear_children();
     commands.entity(entity).clear();
     commands.entity(entity).insert((
@@ -563,12 +562,13 @@ fn despawn_died_enemies(
         transform.translation().z,
       )),
     ));
+    let handle = match enemy.variant {
+      EnemyVariant::Aqua => assets.dead_enemy_sprite.clone(),
+      EnemyVariant::Green => assets.dead_enemy_green_sprite.clone(),
+      EnemyVariant::Red => assets.dead_enemy_red_sprite.clone(),
+    };
     commands.entity(entity).with_children(|parent| {
-      parent.spawn((
-        make_dead_enemy_effect(assets.dead_enemy_sprite.clone()),
-        Playing,
-        StateDespawnMarker,
-      ));
+      parent.spawn((make_dead_enemy_effect(handle), Playing, StateDespawnMarker));
     });
   }
 }

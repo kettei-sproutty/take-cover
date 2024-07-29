@@ -19,6 +19,8 @@ pub struct UiAssets {
   pub enemy_green_spritesheet: Handle<Image>,
   pub enemy_dirt_sprite: Handle<Image>,
   pub dead_enemy_sprite: Handle<Image>,
+  pub dead_enemy_red_sprite: Handle<Image>,
+  pub dead_enemy_green_sprite: Handle<Image>,
 }
 
 #[derive(Resource)]
@@ -57,6 +59,8 @@ fn load_ui_assets(
   let planet = asset_server.load("levels/walls.ldtk");
   let player_spritesheet: Handle<Image> = asset_server.load("textures/player/player_norm.png");
   let dead_enemy_sprite: Handle<Image> = asset_server.load("textures/worm/thorax.png");
+  let dead_enemy_red_sprite: Handle<Image> = asset_server.load("textures/worm/red_thorax.png");
+  let dead_enemy_green_sprite: Handle<Image> = asset_server.load("textures/worm/green_thorax.png");
   let enemy_dirt_sprite: Handle<Image> = asset_server.load("textures/worm/dirt.png");
   let enemy_blue_spritesheet: Handle<Image> =
     asset_server.load("textures/worm/sheet/worm_blue_norm.png");
@@ -72,6 +76,8 @@ fn load_ui_assets(
   loading.add(&planet);
   loading.add(&player_spritesheet);
   loading.add(&dead_enemy_sprite);
+  loading.add(&dead_enemy_red_sprite);
+  loading.add(&dead_enemy_green_sprite);
   loading.add(&enemy_blue_spritesheet);
   loading.add(&enemy_green_spritesheet);
   loading.add(&enemy_red_spritesheet);
@@ -80,6 +86,8 @@ fn load_ui_assets(
   // Insert the assets resources into the game
   commands.insert_resource(UiAssets {
     dead_enemy_sprite,
+    dead_enemy_green_sprite,
+    dead_enemy_red_sprite,
     enemy_dirt_sprite,
     font_sans,
     font_mono,
