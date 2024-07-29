@@ -47,7 +47,7 @@
 			"type": "IntGrid",
 			"uid": 9,
 			"doc": null,
-			"uiColor": null,
+			"uiColor": "#000000",
 			"gridSize": 16,
 			"guideGridWid": 0,
 			"guideGridHei": 0,
