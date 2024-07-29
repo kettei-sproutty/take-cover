@@ -38,6 +38,7 @@ pub const ENEMY_DELIVER_TIME: f32 = 1.0;
 pub const READY_FLICKER_FREQUENCY: f32 = 40.0;
 pub const READY_FLICKER_WAVELENGTH: f32 = 0.5;
 pub const ENEMY_SPRITE_SIZE: f32 = 64.0;
+pub const TILE_SPRITE_SIZE: f32 = 16.0;
 pub const SPRITE_SIZE: f32 = 22.0;
 pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 3.0;
 pub const PLAYER_DEFAULT_SPRITE_INDEX: usize = 0;
