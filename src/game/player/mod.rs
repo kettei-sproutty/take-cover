@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+  audio::{PlaybackMode, Volume},
+  prelude::*,
+};
 use bevy_rapier2d::prelude::*;
 use seldom_state::{
   prelude::{AnyState, StateMachine},
@@ -11,6 +14,9 @@ use crate::{assets::UiAssets, prelude::*};
 use super::common::animations::AnimationIndices;
 
 mod sprite;
+
+#[derive(Component)]
+pub struct FootstepsIndices(pub Option<usize>);
 
 #[derive(Component)]
 pub struct Player {
@@ -67,6 +73,7 @@ impl Plugin for PlayerPlugin {
         dodge,
         tick_decelerate_timer,
         tick_dodge_cooldown_timer,
+        play_footsteps,
       )
         .run_if(in_state(AppState::InGame))
         .after(init_player),
@@ -110,7 +117,7 @@ pub fn init_player(
     false
   };
 
-  let (texture, atlas, animation_timer) = get_main_animation(texture_atlas_layouts, ui_assets);
+  let (texture, atlas, animation_timer) = get_main_animation(texture_atlas_layouts, &ui_assets);
 
   commands
     .spawn((
@@ -121,19 +128,28 @@ pub fn init_player(
         .trans::<Dodge, _>(is_dodge_done, Idle)
         .trans::<AnyState, _>(has_dodged, Dodge::default())
         .on_enter::<Idle>(|entity| {
-          entity.insert(AnimationIndices { first: 0, last: 10 });
+          entity.insert((
+            FootstepsIndices(None),
+            AnimationIndices { first: 0, last: 10 },
+          ));
         })
         .on_enter::<Move>(|entity| {
-          entity.insert(AnimationIndices {
-            first: 24,
-            last: 35,
-          });
+          entity.insert((
+            FootstepsIndices(Some(0)),
+            AnimationIndices {
+              first: 24,
+              last: 35,
+            },
+          ));
         })
         .on_enter::<Dodge>(|entity| {
-          entity.insert(AnimationIndices {
-            first: 72,
-            last: 75,
-          });
+          entity.insert((
+            FootstepsIndices(None),
+            AnimationIndices {
+              first: 72,
+              last: 75,
+            },
+          ));
         })
         .set_trans_logging(true),
       Collider::cuboid(8., 8.),
@@ -147,6 +163,14 @@ pub fn init_player(
       Player::default(),
       GravityScale(0.),
       AnimationIndices { first: 0, last: 11 },
+      AudioBundle {
+        source: ui_assets.footsteps[0].clone(),
+        settings: PlaybackSettings {
+          mode: PlaybackMode::Remove,
+          volume: Volume::new(0.2),
+          ..Default::default()
+        },
+      },
       Idle,
     ))
     .with_children(|parent| {
@@ -223,5 +247,33 @@ fn tick_decelerate_timer(mut timer_query: Query<&mut Dodge, With<Player>>, time:
 fn tick_dodge_cooldown_timer(mut query: Query<&mut Player>, time: Res<Time>) {
   for mut player in &mut query {
     player.dodge_cooldown.tick(time.delta());
+  }
+}
+
+fn play_footsteps(
+  mut commands: Commands,
+  mut query: Query<(Entity, &mut FootstepsIndices), (With<Move>, Without<AudioSink>)>,
+  ui_assets: Res<UiAssets>,
+) {
+  for (entity, mut footsteps) in &mut query {
+    if footsteps.0.is_none() {
+      continue;
+    };
+
+    let index = footsteps.0.unwrap();
+
+    let audio_source = AudioBundle {
+      source: ui_assets.footsteps[index].clone(),
+      settings: PlaybackSettings {
+        mode: PlaybackMode::Remove,
+        volume: Volume::new(0.2),
+        ..Default::default()
+      },
+    };
+
+    commands.entity(entity).insert(audio_source);
+
+    let new_index = (index + 1) % ui_assets.footsteps.len();
+    footsteps.0 = Some(new_index);
   }
 }

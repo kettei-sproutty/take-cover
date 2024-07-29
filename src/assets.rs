@@ -17,6 +17,8 @@ pub struct UiAssets {
   pub enemy_red_spritesheet: Handle<Image>,
   pub enemy_blue_spritesheet: Handle<Image>,
   pub enemy_green_spritesheet: Handle<Image>,
+  pub footsteps: [Handle<AudioSource>; 5],
+  pub game_soundtrack: Handle<AudioSource>,
 }
 
 #[derive(Resource)]
@@ -52,14 +54,30 @@ fn load_ui_assets(
   let font_sans = asset_server.load("fonts/Exo2.ttf");
   let font_mono = asset_server.load("fonts/JetBrainsMono.ttf");
   let atlas = asset_server.load("textures/1-bit/colored.png");
+
+  // player spritesheet
   let planet = asset_server.load("levels/walls.ldtk");
   let player_spritesheet: Handle<Image> = asset_server.load("textures/player/player_norm.png");
+
+  // enemy spritesheets
   let enemy_blue_spritesheet: Handle<Image> =
     asset_server.load("textures/worm/sheet/worm_blue_norm.png");
   let enemy_red_spritesheet: Handle<Image> =
     asset_server.load("textures/worm/sheet/worm_red_norm.png");
   let enemy_green_spritesheet: Handle<Image> =
     asset_server.load("textures/worm/sheet/worm_green_norm.png");
+
+  // footsteps
+  let footsteps: [Handle<AudioSource>; 5] = [
+    asset_server.load("sounds/impact-sounds/footstep_wood_000.ogg"),
+    asset_server.load("sounds/impact-sounds/footstep_wood_001.ogg"),
+    asset_server.load("sounds/impact-sounds/footstep_wood_002.ogg"),
+    asset_server.load("sounds/impact-sounds/footstep_wood_003.ogg"),
+    asset_server.load("sounds/impact-sounds/footstep_wood_004.ogg"),
+  ];
+
+  // game soundtrack
+  let game_soundtrack: Handle<AudioSource> = asset_server.load("sounds/stellar-drift.ogg");
 
   // Connect the assets to the loading tracker by `iyes_progress`
   loading.add(&font_sans);
@@ -70,6 +88,11 @@ fn load_ui_assets(
   loading.add(&enemy_blue_spritesheet);
   loading.add(&enemy_green_spritesheet);
   loading.add(&enemy_red_spritesheet);
+  loading.add(&game_soundtrack);
+
+  for footstep in footsteps.iter() {
+    loading.add(footstep);
+  }
 
   // Insert the assets resources into the game
   commands.insert_resource(UiAssets {
@@ -81,6 +104,8 @@ fn load_ui_assets(
     enemy_blue_spritesheet,
     enemy_green_spritesheet,
     enemy_red_spritesheet,
+    footsteps,
+    game_soundtrack,
   });
 }
 

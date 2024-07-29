@@ -6,6 +6,7 @@ pub mod player;
 pub mod tiles;
 
 use attack::AttackPlugin;
+use bevy::audio::{PlaybackMode, Volume};
 use bevy_ecs_ldtk::{app::LdtkIntCellAppExt, LdtkWorldBundle, LevelSelection};
 use common::flip;
 use cycle::CyclePlugin;
@@ -52,6 +53,14 @@ fn setup_game(
 
   commands.spawn((
     StateDespawnMarker,
+    AudioBundle {
+      source: ui.game_soundtrack.clone(),
+      settings: PlaybackSettings {
+        mode: PlaybackMode::Loop,
+        volume: Volume::new(0.5),
+        ..Default::default()
+      },
+    },
     LdtkWorldBundle {
       ldtk_handle: ui.planet.clone(),
       ..Default::default()

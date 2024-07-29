@@ -6,7 +6,7 @@ use super::{ANIMATION_RATE, PLAYER_DEFAULT_SPRITE_INDEX};
 
 pub fn get_main_animation(
   mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-  image_handle: Res<UiAssets>,
+  image_handle: &Res<UiAssets>,
 ) -> (Handle<Image>, TextureAtlas, AnimationTimer) {
   let texture = image_handle.player_spritesheet.clone();
   let layout = TextureAtlasLayout::from_grid(
