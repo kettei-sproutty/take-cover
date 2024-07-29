@@ -68,7 +68,10 @@ impl Plugin for CyclePlugin {
         .run_if(in_state(CycleState::Meteors))
         .run_if(in_state(AppState::InGame)),
     );
-    app.add_systems(Update, falling_meteor.run_if(in_state(AppState::InGame)));
+    app.add_systems(
+      FixedUpdate,
+      falling_meteor.run_if(in_state(AppState::InGame)),
+    );
   }
 }
 
@@ -168,7 +171,7 @@ fn spawn_meteor(
       ..default()
     },
     Falling,
-    FallSpeed(rand::thread_rng().gen_range(0.1..0.3)),
+    FallSpeed(rand::thread_rng().gen_range(0.3..0.5)),
   ));
 
   cycle.meteors -= 1;

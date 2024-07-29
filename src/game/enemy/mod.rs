@@ -555,7 +555,6 @@ fn despawn_died_enemies(
       EnemyVariant::Green => assets.dead_enemy_green_sprite.clone(),
       EnemyVariant::Red => assets.dead_enemy_red_sprite.clone(),
     };
-    commands.entity(entity).despawn_recursive();
 
     let effect = commands
       .spawn_empty()
@@ -572,5 +571,7 @@ fn despawn_died_enemies(
     commands.entity(effect).with_children(|parent| {
       parent.spawn((make_dead_enemy_effect(handle), Playing));
     });
+
+    commands.entity(entity).despawn_recursive();
   }
 }
