@@ -550,24 +550,27 @@ fn despawn_died_enemies(
   assets: Res<UiAssets>,
 ) {
   for (entity, transform, enemy) in query.iter() {
-    commands.entity(entity).clear_children();
-    commands.entity(entity).clear();
-    commands.entity(entity).insert((
-      DespawnTimer(Timer::from_seconds(1.0, TimerMode::Once)),
-      StateDespawnMarker,
-      SpatialBundle::from_transform(Transform::from_xyz(
-        transform.translation().x,
-        transform.translation().y,
-        transform.translation().z,
-      )),
-    ));
     let handle = match enemy.variant {
       EnemyVariant::Aqua => assets.dead_enemy_sprite.clone(),
       EnemyVariant::Green => assets.dead_enemy_green_sprite.clone(),
       EnemyVariant::Red => assets.dead_enemy_red_sprite.clone(),
     };
-    commands.entity(entity).with_children(|parent| {
-      parent.spawn((make_dead_enemy_effect(handle), Playing, StateDespawnMarker));
+    commands.entity(entity).despawn_recursive();
+
+    let effect = commands
+      .spawn_empty()
+      .insert((
+        DespawnTimer(Timer::from_seconds(1.0, TimerMode::Once)),
+        StateDespawnMarker,
+        SpatialBundle::from_transform(Transform::from_xyz(
+          transform.translation().x,
+          transform.translation().y,
+          transform.translation().z,
+        )),
+      ))
+      .id();
+    commands.entity(effect).with_children(|parent| {
+      parent.spawn((make_dead_enemy_effect(handle), Playing));
     });
   }
 }
