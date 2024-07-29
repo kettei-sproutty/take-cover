@@ -556,16 +556,14 @@ fn despawn_died_enemies(
       EnemyVariant::Red => assets.dead_enemy_red_sprite.clone(),
     };
 
+    let t = transform.translation();
+
     let effect = commands
       .spawn_empty()
       .insert((
         DespawnTimer(Timer::from_seconds(1.0, TimerMode::Once)),
         StateDespawnMarker,
-        SpatialBundle::from_transform(Transform::from_xyz(
-          transform.translation().x,
-          transform.translation().y,
-          transform.translation().z,
-        )),
+        SpatialBundle::from_transform(Transform::from_xyz(t.x, t.y, t.z)),
       ))
       .id();
     commands.entity(effect).with_children(|parent| {
