@@ -1,5 +1,8 @@
-use crate::{game::enemy::DyingComponent, prelude::*};
-use bevy::window::PrimaryWindow;
+use crate::{assets::UiAssets, game::enemy::DyingComponent, prelude::*};
+use bevy::{
+  audio::{PlaybackMode, Volume},
+  window::PrimaryWindow,
+};
 use bevy_rapier2d::prelude::*;
 use seldom_state::prelude::StateMachine;
 
@@ -83,6 +86,8 @@ fn track_mouse_movement(
   q_camera: Query<(&Camera, &GlobalTransform), With<Camera>>,
   query: Query<Entity, With<Attack>>,
   q_windows: Query<&Window, With<PrimaryWindow>>,
+  attack_trail_query: Query<&AttackTrail, With<AudioSink>>,
+  ui: Res<UiAssets>,
 ) {
   if let Ok(_entity) = query.get_single() {
     let (camera, camera_transform) = q_camera.single();
@@ -95,21 +100,34 @@ fn track_mouse_movement(
     {
       mouse_position.0.push(position);
 
-      // sprite color should be red when the attac is not valid (area < 10k / not a closed shape)
+      // sprite color should be red when the attack is not valid (area < 10k / not a closed shape)
 
-      commands.spawn((
-        StateDespawnMarker,
-        AttackTrail,
-        SpriteBundle {
-          sprite: Sprite {
-            color: colors::PRIMARY_200,
-            custom_size: Some(Vec2::new(2., 2.)),
-            ..default()
+      let entity = commands
+        .spawn((
+          StateDespawnMarker,
+          AttackTrail,
+          SpriteBundle {
+            sprite: Sprite {
+              color: colors::PRIMARY_200,
+              custom_size: Some(Vec2::new(2., 2.)),
+              ..default()
+            },
+            transform: Transform::from_xyz(position.x, position.y, PLAYER_Z_INDEX),
+            ..Default::default()
           },
-          transform: Transform::from_xyz(position.x, position.y, PLAYER_Z_INDEX),
-          ..Default::default()
-        },
-      ));
+        ))
+        .id();
+
+      if attack_trail_query.iter().count() == 0 {
+        commands.entity(entity).insert(AudioBundle {
+          source: ui.attack_sound.clone(),
+          settings: PlaybackSettings {
+            mode: PlaybackMode::Remove,
+            volume: Volume::new(0.0001),
+            ..Default::default()
+          },
+        });
+      }
     }
   }
 }

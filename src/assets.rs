@@ -23,6 +23,7 @@ pub struct UiAssets {
   pub dead_enemy_sprite: Handle<Image>,
   pub dead_enemy_red_sprite: Handle<Image>,
   pub dead_enemy_green_sprite: Handle<Image>,
+  pub attack_sound: Handle<AudioSource>,
 }
 
 #[derive(Resource)]
@@ -86,6 +87,7 @@ fn load_ui_assets(
 
   // game soundtrack
   let game_soundtrack: Handle<AudioSource> = asset_server.load("sounds/stellar-drift.ogg");
+  let attack_sound: Handle<AudioSource> = asset_server.load("sounds/attack.wav");
 
   // Connect the assets to the loading tracker by `iyes_progress`
   loading.add(&font_sans);
@@ -100,6 +102,7 @@ fn load_ui_assets(
   loading.add(&enemy_green_spritesheet);
   loading.add(&enemy_red_spritesheet);
   loading.add(&game_soundtrack);
+  loading.add(&attack_sound);
 
   for footstep in footsteps.iter() {
     loading.add(footstep);
@@ -122,6 +125,7 @@ fn load_ui_assets(
     enemy_red_spritesheet,
     footsteps,
     game_soundtrack,
+    attack_sound,
   });
 }
 

@@ -14,6 +14,7 @@
 - [sanctumpixel](https://sanctumpixel.itch.io/) - Worm assets bought from its [itch.io page](https://sanctumpixel.itch.io/worm-pixel-art-monster), all rights reserved to them
 - [penusbmic](https://penusbmic.itch.io/) - Glitch Samurai asset bought from its [itch.io page](https://penusbmic.itch.io/the-dark-series-glitch-samurai)
 - [alkakrab](https://alkakrab.itch.io) - Stellar Drift soundtrack from its [itch.io page](https://alkakrab.itch.io/free-sci-fi-music-2)
+- [shapeform](https://shapeforms.itch.io) - For some sound effect from its [itch.io page](https://shapeforms.itch.io/shapeforms-audio-free-sfx)
 
 ## How to play
 
