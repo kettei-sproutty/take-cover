@@ -89,7 +89,7 @@ fn setup_game(
         style: Style {
           height: Val::Px(32.),
           position_type: PositionType::Absolute,
-          top: Val::Px(46.),
+          top: Val::Px(54.),
           right: Val::Px(16.),
           ..Default::default()
         },
