@@ -3,13 +3,15 @@ pub mod common;
 pub mod cycle;
 pub mod enemy;
 pub mod player;
+pub mod tiles;
 
 use attack::AttackPlugin;
-use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
+use bevy_ecs_ldtk::{app::LdtkIntCellAppExt, LdtkWorldBundle, LevelSelection};
 use common::flip;
 use cycle::CyclePlugin;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
+use tiles::WallBundle;
 
 use crate::{assets::UiAssets, prelude::*};
 
@@ -35,6 +37,8 @@ impl<S: States> Plugin for GamePlugin<S> {
     app.add_plugins((PlayerPlugin, EnemyPlugin, CyclePlugin, AttackPlugin));
     app.add_systems(Update, (update_score, update_state));
     app.add_systems(Update, flip.run_if(in_state(AppState::InGame)));
+
+    app.register_ldtk_int_cell::<WallBundle>(1);
   }
 }
 
