@@ -7,6 +7,7 @@ export default {
 	kit: {
     paths: {
       base: process.env.NODE_ENV === 'production' ? '/take-cover' : '',
+      relative: true,
     },
 		adapter: adapter({
 			pages: 'build',

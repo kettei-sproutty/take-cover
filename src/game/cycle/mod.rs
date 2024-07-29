@@ -163,7 +163,7 @@ fn spawn_meteor(
     state_machine,
     MaterialMesh2dBundle {
       mesh: meshes.add(Circle::new(SPRITE_SIZE / 2.)).into(),
-      material: materials.add(colors::PRIMARY_100),
+      material: materials.add(colors::RED_100),
       transform: meteor_transform,
       ..default()
     },
@@ -176,11 +176,22 @@ fn spawn_meteor(
 
 fn falling_meteor(
   #[allow(unused_variables)] time: Res<Time>,
-  mut meteor_query: Query<(&mut Transform, &FallSpeed), With<Falling>>,
+  mut meteor_query: Query<(&mut Transform, &mut Handle<ColorMaterial>, &FallSpeed), With<Falling>>,
+  mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-  for (mut transform, fall_speed) in &mut meteor_query {
+  for (mut transform, color_material, fall_speed) in &mut meteor_query {
     transform.translation.z -= fall_speed.0;
-    // TODO: change scale based on z
+
+    if let Some(material) = materials.get_mut(color_material.id()) {
+      material.color = match transform.translation.z {
+        z if z > 20. => colors::RED_100,
+        z if z > 15. => colors::RED_200,
+        z if z > 10. => colors::RED_300,
+        z if z > 5. => colors::RED_400,
+        _ => colors::RED_500,
+      };
+    }
+
     transform.scale = Vec3::splat(1.0 - transform.translation.z / 25.);
   }
 }
