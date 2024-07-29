@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.2.0](https://github.com/kettei-sproutty/take-cover/compare/v0.1.0...v0.2.0) (2024-07-29)
+
+
+### Features
+
+* add dead enemy effect ([b1339bf](https://github.com/kettei-sproutty/take-cover/commit/b1339bf173abd8b861ef0aa275e80ba869239b25))
+* add enemy particles ([0bdbade](https://github.com/kettei-sproutty/take-cover/commit/0bdbadef094d7b0b62ba5be6a596ad8c5c2b18c3))
+* add footsteps, background music ([bd8a12e](https://github.com/kettei-sproutty/take-cover/commit/bd8a12e8bc2d07882163f891e2085b4e392b53d7))
+* add impact sounds assets ([cffab88](https://github.com/kettei-sproutty/take-cover/commit/cffab880ad89a556895f77b07d0d2281f22301f5))
+* attack audio ([876dbff](https://github.com/kettei-sproutty/take-cover/commit/876dbff2ce97818cbe8c7cfe10ed8f20859350e2))
+* clear enemies properly ([9c728ad](https://github.com/kettei-sproutty/take-cover/commit/9c728ad81aeedd9c564a9b370d50d245e192f7e3))
+* delete normalization, use fixedUpdate ([6c49ea2](https://github.com/kettei-sproutty/take-cover/commit/6c49ea22cc3516baefc0a7f8f5bdbf6bef534753))
+* normalize movement ([5cce402](https://github.com/kettei-sproutty/take-cover/commit/5cce4020f2777b9356809cf9c4becbf3251bb4f1))
+* remove hanabi, add particle_systems ([4f13d3a](https://github.com/kettei-sproutty/take-cover/commit/4f13d3a2cd6b9c8c5d8a76314b96fe73a3d429ac))
+
+
+### Bug Fixes
+
+* **ci:** add itch channel ([764ca53](https://github.com/kettei-sproutty/take-cover/commit/764ca531b1ad5251269c07f16190f86493806163))
+* **ci:** checkout on each step ([88d2ca1](https://github.com/kettei-sproutty/take-cover/commit/88d2ca1a2f2dab4d127129f392fa8cc2962a9471))
+* **ci:** install pnpm ([0a52d18](https://github.com/kettei-sproutty/take-cover/commit/0a52d1857d3128a3172920002b3ed64f992e101a))
+* **ci:** install wasm-bindgen only if not installed ([cdc2155](https://github.com/kettei-sproutty/take-cover/commit/cdc2155029633c5dd7807f7bf93f517d0f34edfd))
+* **ci:** merge steps ([b5ce71e](https://github.com/kettei-sproutty/take-cover/commit/b5ce71ed2ad12f75ac2e3c07d1bc6e8739e59a20))
+* **ci:** remove multiple checkouts ([cc2cae4](https://github.com/kettei-sproutty/take-cover/commit/cc2cae42bb9280fac3317d3a6e5f1ce4c716d9c2))
+* **ci:** typo in pipeline ([2e55a09](https://github.com/kettei-sproutty/take-cover/commit/2e55a092893441cda9d172b085d79848b00a4c85))
+* **game:** remove wasm-only code ([d605034](https://github.com/kettei-sproutty/take-cover/commit/d60503465a10f0b37fb080c5df3df8d94408659c))
+
 ## 0.1.0 (2024-07-29)
 
 
