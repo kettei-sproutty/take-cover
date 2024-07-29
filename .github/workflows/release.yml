@@ -1,24 +1,16 @@
 name: "Release"
 
+# TODO: Deploy on tags
 on:
   push:
-    tags:
-      - "*"
+    branches:
+      - main
 
 env:
   ITCH_TARGET: "kettei-sproutty/take-cover"
   VERSION: ${{ github.ref }}
 
 jobs:
-  get-version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get version number from tag
-        id: tag
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "${GITHUB_OUTPUT}"
-    outputs:
-      version: ${{ inputs.version || 'v1' }}
-
   install:
     runs-on: ubuntu-latest
     steps:
@@ -53,13 +45,17 @@ jobs:
         run: cp -r assets www/static
       - name: Build Web
         run: cd www && pnpm install --no-frozen-lockfile && pnpm build && cc ..
-      # - name: Install zip
-      #   uses: montudor/action-zip@v1
-      # - name: Zip output
-      #   run: zip -qq -r build.zip www/build
+      - name: Install zip
+        uses: montudor/action-zip@v1
+      - name: Zip output
+        run: zip -qq -r build.zip www/build
       - name: Upload all packages to itch.io
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_KEY }}
-        run: ./butler push www/build '${{ env.ITCH_TARGET }}'
+        run: ./butler push build.zip '${{ env.ITCH_TARGET }}'
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./www/build
 
 
