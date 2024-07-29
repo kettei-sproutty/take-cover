@@ -44,7 +44,7 @@ jobs:
       - name: Upload all packages to itch.io
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_KEY }}
-        run: ./butler push build.zip '${{ env.ITCH_TARGET }}'
+        run: ./butler push build.zip '${{ env.ITCH_TARGET }}:html5'
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
