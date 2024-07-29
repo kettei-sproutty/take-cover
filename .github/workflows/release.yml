@@ -32,6 +32,7 @@ jobs:
       - install
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: cargo clippy --workspace --all-targets --all-features -- --deny warnings
       - run: cargo fmt --all -- --check
   release:
@@ -39,6 +40,7 @@ jobs:
       - checks
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Build
         run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --no-default-features
       - name: Wasm Bindgen
