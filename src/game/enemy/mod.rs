@@ -193,6 +193,7 @@ impl Plugin for EnemyPlugin {
 fn follow(
   mut enemy_query: Query<(&Follow, &mut Velocity, &Transform), With<Enemy>>,
   player_query: Query<&Transform, With<Player>>,
+  time: Res<Time>,
 ) {
   for (follow, mut rb_vels, transform) in enemy_query.iter_mut() {
     let player_transform = player_query.single();
@@ -214,7 +215,7 @@ fn follow(
       Vec2::ZERO
     } else {
       let direction = direction / distance;
-      direction * follow.speed
+      direction * follow.speed * time.delta_seconds()
     };
 
     rb_vels.linvel = velocity;
@@ -292,7 +293,7 @@ fn spawn_enemy(
       near_player,
       Follow {
         target: player_entity,
-        speed: rand::thread_rng().gen_range(20.0..40.0),
+        speed: rand::thread_rng().gen_range(2000.0..4000.0),
         angle,
         player_radius: radius,
       },

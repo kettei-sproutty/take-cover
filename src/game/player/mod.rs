@@ -201,6 +201,7 @@ pub fn init_player(
 fn move_player(
   keyboard_input: Res<ButtonInput<KeyCode>>,
   mut player_info: Query<(&mut Player, &mut Velocity), Without<Dodge>>,
+  time: Res<Time>,
 ) {
   for (mut player, mut rb_vels) in &mut player_info {
     let up = keyboard_input.any_pressed([KeyCode::KeyW, KeyCode::ArrowUp]);
@@ -215,7 +216,7 @@ fn move_player(
 
     // Update the velocity on the rigid_body_component,
     // the bevy_rapier plugin will update the Sprite transform.
-    rb_vels.linvel = move_delta * player.speed;
+    rb_vels.linvel = move_delta * player.speed * time.delta_seconds();
     player.last_direction = rb_vels.linvel;
   }
 }
