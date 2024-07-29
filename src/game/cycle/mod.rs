@@ -134,7 +134,7 @@ fn spawn_meteor(
     cycle.start = Timer::from_seconds(CYCLE_DURATION, TimerMode::Once);
     cycle.index += 1;
     cycle.meteors = CYCLE_WEIGHT * cycle.index;
-    score.0 += cycle.index * 10;
+    score.0 += cycle.index.pow(3);
   };
 
   let is_on_ground = |In(entity): In<Entity>, query: Query<&Transform>| {
@@ -212,7 +212,7 @@ fn check_impact(
     if player_position.distance(meteor_position) < SPRITE_SIZE {
       next_state.set(AppState::GameOver);
     } else {
-      score.0 += 1;
+      score.0 += 3;
     }
 
     commands.entity(entity).despawn();

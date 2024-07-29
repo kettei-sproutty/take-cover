@@ -172,6 +172,8 @@ fn check_for_collisions(
   mut score: ResMut<Score>,
   time: Res<Time>,
 ) {
+  let mut enemies_killed: usize = 0;
+
   for (collider_entity, colliders, mut cooldown) in &mut query {
     cooldown.0.tick(time.delta());
 
@@ -179,7 +181,7 @@ fn check_for_collisions(
       if colliders.contains(enemy_entity) {
         commands.entity(enemy_entity).insert(DyingComponent);
         commands.entity(collider_entity).despawn();
-        score.0 += 3;
+        enemies_killed += 1;
       }
     }
 
@@ -190,4 +192,6 @@ fn check_for_collisions(
       }
     }
   }
+
+  score.0 += enemies_killed.pow(3);
 }
