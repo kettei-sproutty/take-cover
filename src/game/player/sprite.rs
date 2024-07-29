@@ -10,10 +10,10 @@ pub fn get_main_animation(
 ) -> (Handle<Image>, TextureAtlas, AnimationTimer) {
   let texture = image_handle.player_spritesheet.clone();
   let layout = TextureAtlasLayout::from_grid(
-    UVec2::new(26, 22),
+    UVec2::new(28, 22),
+    12,
     11,
-    11,
-    Some(UVec2::new(114, 23)),
+    Some(UVec2::new(112, 23)),
     Some(UVec2::new(47, 23)),
   );
   let texture_atlas_layouts = texture_atlas_layouts.add(layout);
