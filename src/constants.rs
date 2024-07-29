@@ -35,7 +35,7 @@ pub const PLAYER_DEFAULT_SPRITE_INDEX: usize = 0;
 pub const CYCLE_DURATION: f32 = 5.0;
 /// The weight of a cycle, expressed in arbitrary units.
 /// Every unit of weight is equivalent of 1 falling meteor.
-pub const CYCLE_WEIGHT: usize = 5;
+pub const CYCLE_WEIGHT: usize = 3;
 #[allow(dead_code)]
 /// The delay between meteor spawns, expressed in seconds.
 pub const METEOR_SPAWN_DELAY: f32 = 0.25;
@@ -51,3 +51,6 @@ pub const ATTACK_GROUP: Group = Group::GROUP_1;
 pub const ENEMY_GROUP: Group = Group::GROUP_2;
 pub const PLAYER_GROUP: Group = Group::GROUP_3;
 pub const ATTACK_TRAIL_GROUP: Group = Group::GROUP_4;
+
+// attack
+pub const MIN_ATTACK_AREA: f32 = 10_000.0;

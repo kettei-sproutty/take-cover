@@ -95,6 +95,8 @@ fn track_mouse_movement(
     {
       mouse_position.0.push(position);
 
+      // sprite color should be red when the attac is not valid (area < 10k / not a closed shape)
+
       commands.spawn((
         StateDespawnMarker,
         AttackTrail,
@@ -124,19 +126,36 @@ pub fn check_attack(
 
   if let Ok(_entity) = query.get_single() {
     let mut vertices = positions.0.clone();
-    vertices.push(vertices[0]);
+    let distance_between_points = vertices[0].distance(*vertices.last().unwrap());
 
-    commands.spawn((
-      StateDespawnMarker,
-      AttackTrailCollider,
-      Collider::polyline(vertices, None),
-      CollisionGroups::new(ATTACK_TRAIL_GROUP, ENEMY_GROUP),
-      ActiveCollisionTypes::all(),
-      Sensor,
-      Cooldown(Timer::from_seconds(0.1, TimerMode::Once)),
-      CollidingEntities::default(),
-      ActiveEvents::COLLISION_EVENTS,
-    ));
+    let area = vertices
+      .iter()
+      .zip(vertices.iter().skip(1))
+      .map(|(a, b)| f32::abs(a.x * b.y - a.y * b.x))
+      .sum::<f32>()
+      / 2.0;
+
+    if distance_between_points < SPRITE_SIZE * 3.0 && area >= MIN_ATTACK_AREA {
+      vertices.push(vertices[0]);
+
+      // find a way to generate points inside the shape
+      // for (index, _vertex) in vertices.clone().iter().take(vertices.len() / 2).enumerate() {
+      //   let new_vertex = vertices[vertices.len() - 2 - index];
+      //   vertices.insert(index, new_vertex);
+      // }
+
+      commands.spawn((
+        StateDespawnMarker,
+        AttackTrailCollider,
+        Collider::polyline(vertices, None),
+        CollisionGroups::new(ATTACK_TRAIL_GROUP, ENEMY_GROUP),
+        ActiveCollisionTypes::all(),
+        Sensor,
+        Cooldown(Timer::from_seconds(0.1, TimerMode::Once)),
+        CollidingEntities::default(),
+        ActiveEvents::COLLISION_EVENTS,
+      ));
+    }
 
     for trail_entity in trail_query.iter() {
       commands.entity(trail_entity).despawn();
