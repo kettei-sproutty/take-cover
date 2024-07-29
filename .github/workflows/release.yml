@@ -29,10 +29,8 @@ jobs:
           unzip butler.zip
           chmod +x butler
           ./butler -V
-      - uses: actions/checkout@v4
       - run: cargo clippy --workspace --all-targets --all-features -- --deny warnings
       - run: cargo fmt --all -- --check
-      - uses: actions/checkout@v4
       - name: Build
         run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --no-default-features
       - name: Wasm Bindgen
