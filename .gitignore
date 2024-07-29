@@ -16,5 +16,3 @@ vite.config.ts.timestamp-*
 # Misc
 .DS_Store
 
-# Temp
-.github/workflows/release.yml
