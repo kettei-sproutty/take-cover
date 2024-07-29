@@ -64,7 +64,7 @@ fn main() -> AppExit {
 
   // Physics
   app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
-    SPRITE_SIZE,
+    TILE_SPRITE_SIZE,
   ));
 
   // Particle effects
