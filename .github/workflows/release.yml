@@ -8,7 +8,6 @@ on:
 
 env:
   ITCH_TARGET: "kettei-sproutty/take-cover"
-  VERSION: ${{ github.ref }}
 
 jobs:
   install:
@@ -16,6 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: Leafwing-Studios/cargo-cache@v2
       - run: command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli
       - run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
@@ -27,20 +29,8 @@ jobs:
           unzip butler.zip
           chmod +x butler
           ./butler -V
-  checks:
-    needs:
-      - install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - run: cargo clippy --workspace --all-targets --all-features -- --deny warnings
       - run: cargo fmt --all -- --check
-  release:
-    needs:
-      - checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Build
         run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --no-default-features
       - name: Wasm Bindgen
@@ -48,16 +38,15 @@ jobs:
       - name: Copy Assets
         run: cp -r assets www/static
       - name: Build Web
-        run: cd www && pnpm install --no-frozen-lockfile && pnpm build && cc ..
+        run: cd www && pnpm install --no-frozen-lockfile && pnpm build && cd ..
       - name: Zip output
         run: zip -qq -r build.zip www/build
       - name: Upload all packages to itch.io
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_KEY }}
-        run: ./butler push build.zip '${{ env.ITCH_TARGET }}'
+        run: ./butler push build.zip '${{ env.ITCH_TARGET }}:html5'
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./www/build
-
 
