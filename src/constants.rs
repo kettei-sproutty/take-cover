@@ -40,7 +40,7 @@ pub const READY_FLICKER_WAVELENGTH: f32 = 0.5;
 pub const ENEMY_SPRITE_SIZE: f32 = 64.0;
 pub const TILE_SPRITE_SIZE: f32 = 16.0;
 pub const SPRITE_SIZE: f32 = 22.0;
-pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 500.0;
+pub const PLAYER_SPEED: f32 = SPRITE_SIZE * 5.0;
 pub const PLAYER_DEFAULT_SPRITE_INDEX: usize = 0;
 /// The duration of a cycle, expressed in seconds.
 pub const CYCLE_DURATION: f32 = 5.0;

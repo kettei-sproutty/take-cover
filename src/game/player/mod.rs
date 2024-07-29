@@ -66,10 +66,10 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
     app.add_systems(OnEnter(AppState::InGame), init_player);
+    app.add_systems(FixedUpdate, move_player.run_if(in_state(AppState::InGame)));
     app.add_systems(
       Update,
       (
-        move_player,
         dodge,
         tick_decelerate_timer,
         tick_dodge_cooldown_timer,
@@ -201,7 +201,6 @@ pub fn init_player(
 fn move_player(
   keyboard_input: Res<ButtonInput<KeyCode>>,
   mut player_info: Query<(&mut Player, &mut Velocity), Without<Dodge>>,
-  time: Res<Time>,
 ) {
   for (mut player, mut rb_vels) in &mut player_info {
     let up = keyboard_input.any_pressed([KeyCode::KeyW, KeyCode::ArrowUp]);
@@ -216,7 +215,7 @@ fn move_player(
 
     // Update the velocity on the rigid_body_component,
     // the bevy_rapier plugin will update the Sprite transform.
-    rb_vels.linvel = move_delta * player.speed * time.delta_seconds();
+    rb_vels.linvel = move_delta * player.speed;
     player.last_direction = rb_vels.linvel;
   }
 }
