@@ -17,8 +17,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: Leafwing-Studios/cargo-cache@v2
-      - run: cargo install wasm-bindgen-cli
+      - run: command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli
       - run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - name: Install zip
+        uses: montudor/action-zip@v1
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip 'https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default'
+          unzip butler.zip
+          chmod +x butler
+          ./butler -V
   checks:
     needs:
       - install
@@ -31,12 +39,6 @@ jobs:
       - checks
     runs-on: ubuntu-latest
     steps:
-      - name: Install butler
-        run: |
-          curl -L -o butler.zip 'https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default'
-          unzip butler.zip
-          chmod +x butler
-          ./butler -V
       - name: Build
         run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --no-default-features
       - name: Wasm Bindgen
@@ -45,8 +47,6 @@ jobs:
         run: cp -r assets www/static
       - name: Build Web
         run: cd www && pnpm install --no-frozen-lockfile && pnpm build && cc ..
-      - name: Install zip
-        uses: montudor/action-zip@v1
       - name: Zip output
         run: zip -qq -r build.zip www/build
       - name: Upload all packages to itch.io
