@@ -226,7 +226,7 @@ fn play_main_menu_audio(mut commands: Commands, audio: Res<MainMenuAssets>) {
       source: audio.music.clone(),
       settings: PlaybackSettings {
         mode: PlaybackMode::Loop,
-        volume: Volume::new(0.),
+        volume: Volume::new(0.2),
         ..Default::default()
       },
     },
