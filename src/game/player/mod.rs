@@ -79,16 +79,14 @@ pub fn init_player(
   texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
   ui_assets: Res<UiAssets>,
 ) {
-  let has_moved =
-    move |In(entity): In<Entity>,
-          query: Query<&KinematicCharacterControllerOutput, With<Player>>| {
-      let ctrl = query.get(entity);
-      if let Ok(c) = ctrl {
-        return c.effective_translation.length() > 0.001;
-      };
-
-      false
+  let has_moved = move |In(entity): In<Entity>, query: Query<&Player>| {
+    let ctrl = query.get(entity);
+    if let Ok(c) = ctrl {
+      return c.last_direction.length() > 0.1;
     };
+
+    false
+  };
 
   let has_dodged = move |In(entity): In<Entity>,
                          query: Query<&Player, Without<Dodge>>,
@@ -126,7 +124,16 @@ pub fn init_player(
           entity.insert(AnimationIndices { first: 0, last: 10 });
         })
         .on_enter::<Move>(|entity| {
-          entity.insert(AnimationIndices { first: 0, last: 10 });
+          entity.insert(AnimationIndices {
+            first: 24,
+            last: 35,
+          });
+        })
+        .on_enter::<Dodge>(|entity| {
+          entity.insert(AnimationIndices {
+            first: 72,
+            last: 75,
+          });
         })
         .set_trans_logging(true),
       Collider::cuboid(8., 8.),
