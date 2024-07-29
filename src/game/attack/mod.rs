@@ -125,7 +125,7 @@ pub fn check_attack(
   }
 
   if let Ok(_entity) = query.get_single() {
-    let mut vertices = positions.0.clone();
+    let vertices = positions.0.clone();
     let distance_between_points = vertices[0].distance(*vertices.last().unwrap());
 
     let area = vertices
@@ -135,19 +135,19 @@ pub fn check_attack(
       .sum::<f32>()
       / 2.0;
 
-    if distance_between_points < SPRITE_SIZE * 3.0 && area >= MIN_ATTACK_AREA {
-      vertices.push(vertices[0]);
+    let mut points = vertices.clone();
 
-      // find a way to generate points inside the shape
-      // for (index, _vertex) in vertices.clone().iter().take(vertices.len() / 2).enumerate() {
-      //   let new_vertex = vertices[vertices.len() - 2 - index];
-      //   vertices.insert(index, new_vertex);
-      // }
+    if distance_between_points < SPRITE_SIZE * 2.0 && area >= MIN_ATTACK_AREA {
+      for i in 0..vertices.len() - 1 {
+        let vertex = vertices[vertices.len() - 2 - i];
+        points.push(vertices[i]);
+        points.push(vertex);
+      }
 
       commands.spawn((
         StateDespawnMarker,
         AttackTrailCollider,
-        Collider::polyline(vertices, None),
+        Collider::polyline(points, None),
         CollisionGroups::new(ATTACK_TRAIL_GROUP, ENEMY_GROUP),
         ActiveCollisionTypes::all(),
         Sensor,
