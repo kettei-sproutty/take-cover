@@ -18,7 +18,6 @@ use super::common::{
   tick_despawn_timer, DespawnTimer,
 };
 
-#[cfg(not(target_arch = "wasm32"))]
 mod effects;
 mod sprite;
 
